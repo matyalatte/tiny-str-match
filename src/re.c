@@ -255,15 +255,15 @@ int tsmRegexMatch(const char *pattern, const char *str) {
 
 /* Private functions: */
 static int matchdigit(char c) {
-    return isdigit(c);
+    return isdigit((unsigned char)c);
 }
 
 static int matchalpha(char c) {
-    return isalpha(c);
+    return isalpha((unsigned char)c);
 }
 
 static int matchwhitespace(char c) {
-    return isspace(c);
+    return isspace((unsigned char)c);
 }
 
 static int matchalphanum(char c) {
