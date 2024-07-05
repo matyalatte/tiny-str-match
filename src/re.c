@@ -22,11 +22,12 @@
  *
  */
 
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include "str_match.h"
 #include "utf.h"
 #include "re.h"
-#include <stdio.h>
-#include <ctype.h>
 
 
 /* Definitions: */
@@ -52,8 +53,10 @@ typedef struct regex_t {
 /* Private function declarations: */
 static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength);
 static int matchcharclass(const char* c, int c_size, const char* str);
-static int matchstar(regex_t p, regex_t* pattern, const char* text, int rune_size, int* matchlength);
-static int matchplus(regex_t p, regex_t* pattern, const char* text, int rune_size, int* matchlength);
+static int matchstar(regex_t p, regex_t* pattern,
+                     const char* text, int rune_size, int* matchlength);
+static int matchplus(regex_t p, regex_t* pattern,
+                     const char* text, int rune_size, int* matchlength);
 static int matchone(regex_t p, const char* c, int rune_size);
 static int matchdigit(char c);
 static int matchalpha(char c);
@@ -375,7 +378,8 @@ static int matchone(regex_t p, const char* c, int c_size) {
         case WHITESPACE:     return  matchwhitespace(*c);
         case NOT_WHITESPACE: return !matchwhitespace(*c);
         case BEGIN:          return 0;
-        default:             return  (c_size == p.ch_size) && tsm_rune_cmp(c, p.u.ch, c_size);
+        default:             return  (c_size == p.ch_size) &&
+                                     tsm_rune_cmp(c, (const char*)p.u.ch, c_size);
     }
 }
 
@@ -396,7 +400,7 @@ static int matchplus(regex_t p, regex_t* pattern,
     }
     while (text > prepoint) {
         if (matchpattern(pattern, text, rune_size, matchlength)) {
-            *matchlength += text - prepoint;
+            *matchlength += (int)(text - prepoint);
             return 1;
         }
         do {

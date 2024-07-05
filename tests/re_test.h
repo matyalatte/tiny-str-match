@@ -20,7 +20,7 @@ const RegexCase regex_cases_null[] = {
     { NULL, NULL, TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_Null,
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Null,
     RegexTest,
     ::testing::ValuesIn(regex_cases_null));
 
@@ -97,7 +97,7 @@ const RegexCase regex_cases_ascii[] = {
     { "[a-z\\s]+\nbreak", "bla bla \nbreak", TSM_OK },
 };
 
-INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_Ascii,
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Ascii,
     RegexTest,
     ::testing::ValuesIn(regex_cases_ascii));
 
@@ -108,7 +108,7 @@ const RegexCase regex_cases_utf[] = {
     { u8"^[\u3042-\u304A]*$", u8"\u3042\u3044\u3046\u3048\u304A", TSM_OK },  // \u304A == "お"
 };
 
-INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_UTF,
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_UTF,
     RegexTest,
     ::testing::ValuesIn(regex_cases_utf));
 

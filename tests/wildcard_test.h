@@ -19,7 +19,7 @@ const WildcardCase wildcard_cases_null[] = {
     { NULL, NULL, TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Null,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Null,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_null));
 
@@ -33,7 +33,7 @@ const WildcardCase wildcard_cases_bad[] = {
     { "a\xf0 ", "a\xf0 ", TSM_FAIL },  // four-byte bad rune
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Bad,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Bad,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_bad));
 
@@ -45,7 +45,7 @@ const WildcardCase wildcard_cases_nocard[] = {
     { "test", "test", TSM_OK },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Nocard,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Nocard,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_nocard));
 
@@ -63,7 +63,7 @@ const WildcardCase wildcard_cases_first[] = {
     { "?case", "foocase", TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_First,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_First,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_first));
 
@@ -83,7 +83,7 @@ const WildcardCase wildcard_cases_mid[] = {
     { "test?case", "testfoocase", TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Mid,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Mid,
                         WildcardTest,
                         ::testing::ValuesIn(wildcard_cases_mid));
 
@@ -101,7 +101,7 @@ const WildcardCase wildcard_cases_last[] = {
     { "test?", "testfoo", TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Last,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Last,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_last));
 
@@ -137,7 +137,7 @@ const WildcardCase wildcard_cases_utf[] = {
     { u8"\u00c4?\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_UTF,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_UTF,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_utf));
 
@@ -151,7 +151,7 @@ const WildcardCase wildcard_cases_multicard[] = {
     { "test*case*foo?bar??", "tescasefooabarbc", TSM_FAIL },
 };
 
-INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Multicard,
+INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_Multicard,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_multicard));
 
