@@ -1,6 +1,7 @@
 /*
  * Mini regex-module inspired by tiny-regex-c:
- * https://github.com/kokke/tiny-regex-c/blob/master/re.c
+ * https://github.com/kokke/tiny-regex-c
+ * https://github.com/rurban/tiny-regex-c
  *
  * Supports:
  * ---------
@@ -19,6 +20,9 @@
  *   '\W'       Non-alphanumeric
  *   '\d'       Digits, [0-9]
  *   '\D'       Non-digits
+ *   '{n}'      Match n times
+ *   '{n,}'     Match n or more times
+ *   '{n,m}'    Match n to m times
  *
  */
 
@@ -33,11 +37,13 @@
 /* Definitions: */
 #define MAX_REGEXP_OBJECTS      30    /* Max number of regex symbols in expression. */
 #define MAX_CHAR_CLASS_LEN      40    /* Max length of character-class buffer in.   */
+#define MAX_USHORT 0xffff
 
 enum {
     UNUSED, DOT, BEGIN, END, QUESTIONMARK, STAR, PLUS,
     CHAR, CHAR_CLASS, INV_CHAR_CLASS, DIGIT, NOT_DIGIT,
     ALPHA, NOT_ALPHA, WHITESPACE, NOT_WHITESPACE, /* BRANCH */
+    TIMES,
 };
 
 typedef struct regex_t {
@@ -45,6 +51,10 @@ typedef struct regex_t {
     union {
         unsigned char  ch[4];   /*      the character itself             */
         unsigned char* ccl;  /*  OR  a pointer to characters in class */
+        struct {
+            unsigned short n;
+            unsigned short m;
+        } times;
     } u;
     int ch_size;
 } regex_t;
@@ -58,6 +68,8 @@ static int matchstar(regex_t p, regex_t* pattern,
 static int matchplus(regex_t p, regex_t* pattern,
                      const char* text, int rune_size, int* matchlength);
 static int matchone(regex_t p, const char* c, int rune_size);
+static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned short m,
+                      const char* text, int rune_size, int* matchlength);
 static int matchdigit(char c);
 static int matchalpha(char c);
 static int matchwhitespace(char c);
@@ -65,6 +77,8 @@ static int matchmetachar(const char* c, int c_size, const char* str, int rune_si
 static int matchrange(const char* c, int c_size, const char* str, int rune_size);
 static int matchdot(char c);
 static int ismetachar(char c);
+
+static int parsetimes(const char* pattern, unsigned short* n, unsigned short* m);
 
 
 /* Public functions: */
@@ -205,6 +219,19 @@ re_t re_compile(const char* pattern) {
             re_compiled[j].u.ccl = &ccl_buf[buf_begin];
         } break;
 
+        case '{':
+        {
+            unsigned short n, m;
+            int len = parsetimes(&pattern[i + 1], &n, &m);
+            if (!len)
+                return 0;
+            re_compiled[j].type = TIMES;
+            re_compiled[j].u.times.n = n;
+            re_compiled[j].u.times.m = m;
+            i += len + 1;
+            break;
+        }
+
         /* Other characters: */
         default:
         {
@@ -233,6 +260,7 @@ void re_print(regex_t* pattern) {
         "UNUSED", "DOT", "BEGIN", "END", "QUESTIONMARK", "STAR", "PLUS",
         "CHAR", "CHAR_CLASS", "INV_CHAR_CLASS", "DIGIT", "NOT_DIGIT",
         "ALPHA", "NOT_ALPHA", "WHITESPACE", "NOT_WHITESPACE", "BRANCH",
+        "TIMES",
     };
 
     int i;
@@ -254,6 +282,8 @@ void re_print(regex_t* pattern) {
             printf("]");
         } else if (pattern[i].type == CHAR) {
             printf(" '%c'", pattern[i].u.ch[0]);
+        } else if (pattern[i].type == TIMES) {
+            printf("{%hu,%hu}", pattern[i].u.times.n, pattern[i].u.times.m);
         }
         printf("\n");
     }
@@ -274,6 +304,53 @@ TsmResult tsm_regex_match(const char *pattern, const char *str) {
 
 
 /* Private functions: */
+static int parsetimes(const char* pattern, unsigned short* n, unsigned short* m) {
+    const char* pattern_start = pattern;
+    int n_is_valid = 0;
+    int i_is_valid = 0;
+    unsigned short i = 0;
+    *n = 0;
+    *m = 0;
+    while (*pattern) {
+        if (matchdigit(*pattern)) {
+            i_is_valid = 1;
+            i = i * 10 + (int)(*pattern - '0');
+        } else if (*pattern == ',') {
+            if (n_is_valid)
+                return 0;  // two commas found.
+            if (!i_is_valid)
+                return 0;  // {,* (n not found)
+            else
+                *n = i;  // {n,*
+            i = 0;
+            i_is_valid = 0;
+            n_is_valid = 1;
+        } else if (*pattern == '}') {
+            if (!n_is_valid) {
+                if (!i_is_valid)
+                    return 0;  // {}
+                // {n}
+                *n = i;
+                *m = i;
+            }
+            if (!i_is_valid) {
+                // {n,}
+                *m = MAX_USHORT;
+            } else {
+                // {n,m}
+                *m = i;
+            }
+            if (*m < *n)
+                return 0;  // {n,m} should meet n <= m
+            return (int)(pattern - pattern_start);
+        } else if (*pattern != ' ') {
+            return 0;  // non-numeric character.
+        }
+        pattern++;
+    }
+    return 0;
+}
+
 static int matchdigit(char c) {
     return isdigit((unsigned char)c);
 }
@@ -428,6 +505,32 @@ static int matchquestion(regex_t p, regex_t* pattern,
     return 0;
 }
 
+static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned short m,
+                      const char* text, int rune_size, int* matchlength)
+{
+    unsigned short i = 0;
+    int pre = *matchlength;
+    /* Match the pattern n to m times */
+    if (n == 0 && matchpattern(pattern, text, rune_size, matchlength))
+        return 1;
+    while (*text && matchone(p, text, rune_size) && i < m) {
+        text += rune_size;
+        *matchlength += rune_size;
+        rune_size = tsm_rune_size(text);
+        if (!rune_size) {
+            *matchlength = pre;
+            return 0;
+        }
+        i++;
+        if (i >= n && matchpattern(pattern, text, rune_size, matchlength))
+            return 1;
+    }
+    //if (i == m && matchpattern(pattern, text, rune_size, matchlength))
+    //    return 1;
+    *matchlength = pre;
+    return 0;
+}
+
 static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength) {
     int pre = *matchlength;
     do {
@@ -439,6 +542,9 @@ static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* 
             return matchplus(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if ((pattern[0].type == END) && pattern[1].type == UNUSED)
             return (text[0] == '\0');
+        else if (pattern[1].type == TIMES)
+            return matchtimes(pattern[0], &pattern[2], pattern[1].u.times.n, pattern[1].u.times.m,
+                              text, rune_size, matchlength);
     /*  Branching is not working properly
         else if (pattern[1].type == BRANCH)
             return (matchpattern(pattern, text, rune_size) || matchpattern(&pattern[2], text, rune_size));

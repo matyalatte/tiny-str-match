@@ -1,9 +1,7 @@
 /*
- *
  * Mini regex-module inspired by tiny-regex-c:
- *
- * https://github.com/kokke/tiny-regex-c/blob/master/re.c
- *
+ * https://github.com/kokke/tiny-regex-c
+ * https://github.com/rurban/tiny-regex-c
  *
  * Supports:
  * ---------
@@ -22,7 +20,9 @@
  *   '\W'       Non-alphanumeric
  *   '\d'       Digits, [0-9]
  *   '\D'       Non-digits
- *
+ *   '{n}'      Match n times
+ *   '{n,}'     Match n or more times
+ *   '{n,m}'    Match n to m times
  *
  */
 

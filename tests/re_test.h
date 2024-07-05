@@ -43,6 +43,11 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Bad,
 // Test with invalid patterns.
 const RegexCase regex_cases_syntax[] = {
     { "[", "", TSM_SYNTAX_ERROR },
+    { "{", "", TSM_SYNTAX_ERROR },
+    { "a{,3}", "", TSM_SYNTAX_ERROR },
+    { "a{1,0}", "", TSM_SYNTAX_ERROR },
+    { "a{1,a}", "", TSM_SYNTAX_ERROR },
+    { u8"a{\U0001F600,a}", "", TSM_SYNTAX_ERROR },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_SyntaxError,
@@ -120,6 +125,11 @@ const RegexCase regex_cases_trc[] = {
     { "X?Y", "Z", TSM_FAIL },
     { "[a-z]+\nbreak", "blahblah\nbreak", TSM_OK },
     { "[a-z\\s]+\nbreak", "bla bla \nbreak", TSM_OK },
+    { "\\w{2}", "ab", TSM_OK },
+    { "\\w{2,}", "abc", TSM_OK },
+    { "\\w{3,}", "ab", TSM_FAIL },
+    { "\\w{2,3}", "abc", TSM_OK },
+    { "\\w{3,4}", "ab", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Trc,
@@ -134,6 +144,7 @@ const RegexCase regex_cases_utf[] = {
     { u8"[\\\U0001F600]+", u8"\U0001F600", TSM_OK },
     { u8"[\\\U0001F600]+", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
     { u8"[\\\U0001F600]+", "a", TSM_FAIL },
+    { u8"\U0001F600{3}", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_UTF,
@@ -251,6 +262,38 @@ const RegexCase regex_cases_tsm[] = {
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Tsm,
     RegexTest,
     ::testing::ValuesIn(regex_cases_tsm));
+
+// Test with {} operators.
+const RegexCase regex_cases_times[] = {
+    { "ab{0,}bc", "abbbbc", TSM_OK },
+    { "ab{1,}bc", "abq", TSM_FAIL },
+    { "ab{1,}bc", "abbbbc", TSM_OK },
+    { "ab{1,3}bc", "abbbbc", TSM_OK },
+    { "ab{3,4}bc", "abbbbc", TSM_OK },
+    { "ab{4,5}bc", "abbbbc", TSM_FAIL },
+    { "ab{0,1}bc", "abc", TSM_OK },
+    { "ab{0,1}c", "abc", TSM_OK },
+    { "ab{0,1}c", "ac", TSM_OK },
+    { "ab{3}bc", "abbbbc", TSM_OK },
+    { "ab{2}bc", "abbbbc", TSM_FAIL },
+    { "a{1,}b{1,}c", "aabbabc", TSM_OK },
+    { "[A-Z]{0,4}", "", TSM_OK },
+    { "[A-Z]{1,4}", "", TSM_FAIL },
+    { "[A-Z]{1,4}", "A", TSM_OK },
+    { "[A-Z]{1,4}", "ABYZ", TSM_OK },
+    { "[A-Z]{1,4}", "ABCDE", TSM_OK },
+    { "^[A-Z]{1,4}$", "ABCDE", TSM_FAIL },
+    { "^[A-Z]{1,}$", "ABCDE", TSM_OK },
+    { "^[A-Z]{5,}$", "ABCD", TSM_FAIL },
+    { "[A-Z]{4}", "ABCD", TSM_OK },
+    { "[A-Z]{4}", "AbCD", TSM_FAIL },
+    { "^[A-Z]{4}$", "ABC", TSM_FAIL },
+    { "^[A-Z]{4}$", "ABCDE", TSM_FAIL },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Times,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_times));
 
 TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();

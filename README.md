@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-tiny-str-match is a small and portable C library for string validation with regex, wildcard, etc.
+tiny-str-match is a small and portable C library for string validation with regex and wildcard.
 
 ## Example
 
@@ -48,6 +48,9 @@ int main(void) {
 -   `*`         Asterisk, match zero or more (greedy)
 -   `+`         Plus, match one or more (greedy)
 -   `?`         Question, match zero or one (non-greedy)
+-   `{n}`       Exact Quantifier
+-   `{n,}`      Match n or more times
+-   `{n,m}`     Match n to m times
 -   `[abc]`     Character class, match if one of {'a', 'b', 'c'}
 -   `[^abc]`   Inverted class, match if NOT one of {'a', 'b', 'c'}
 -   `[a-zA-Z]` Character ranges, the character set of the ranges { a-z | A-Z }
@@ -57,9 +60,6 @@ int main(void) {
 -   `\W`       Non-alphanumeric
 -   `\d`       Digits, [0-9]
 -   `\D`       Non-digits
-
-> [!Note]
-> inverted character classes are buggy
 
 ## Supported wildcard-operators
 
@@ -116,7 +116,8 @@ meson compile -C build
 
 ## Credits
 
-- [tiny-regex-c](https://github.com/kokke/tiny-regex-c) by [kokke](https://github.com/kokke) for the basic implementation of regex module.
+- [kokke/tiny-regex-c](https://github.com/kokke/tiny-regex-c) for the basic implementation of regex module.
+- [rurban/tiny-regex-c](https://github.com/rurban/tiny-regex-c) for the basic implementation of some regex operators.
 - [tinymatch.c](https://github.com/r-lyeh/tinybits/blob/master/tinymatch.c) by [r-lyeh](https://github.com/r-lyeh) for the basic implementation of wildcard module.
 
 ## Projects which use tiny-str-match
