@@ -19,14 +19,6 @@ extern "C" {
 #define TSM_VERSION "0.1.0"
 
 /**
- * Counts the binary size of an utf-8 character.
- *
- * @param c A pointer to a character. A null pointer is not allowed.
- * @returns The bubary size of the character. Or zero when failed.
- */
-_TSM_EXTERN int tsmRuneSize(const char *c);
-
-/**
  * Checks if a string matches a wildcard pattern or not.
  *
  * @note "?" for any single character (including multi-byte characters.) "*" for any number of characters.

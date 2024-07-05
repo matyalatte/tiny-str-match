@@ -101,6 +101,16 @@ INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_Ascii,
     RegexTest,
     ::testing::ValuesIn(regex_cases_ascii));
 
+// Test with UTF-8 strings.
+const RegexCase regex_cases_utf[] = {
+    { "^.$", u8"\U0001F600", 1 },  // \U0001F600 == "😀", four-byte
+    { u8"^[\U0001F600\u3042]$", u8"\u3042", 1 },  // \u3042 == "あ", three-byte
+    { u8"^[\u3042-\u304A]*$", u8"\u3042\u3044\u3046\u3048\u304A", 1 },  // \u304A == "お"
+};
+
+INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_UTF,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_utf));
 
 TEST_P(RegexTest, tsmRegexMatch) {
     const RegexCase test_case = GetParam();

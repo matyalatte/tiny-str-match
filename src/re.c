@@ -22,6 +22,8 @@
  *
  */
 
+#include "str_match.h"
+#include "utf.h"
 #include "re.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -40,23 +42,24 @@ enum {
 typedef struct regex_t {
     unsigned char  type;   /* CHAR, STAR, etc.                      */
     union {
-        unsigned char  ch;   /*      the character itself             */
+        unsigned char  ch[4];   /*      the character itself             */
         unsigned char* ccl;  /*  OR  a pointer to characters in class */
     } u;
+    int ch_size;
 } regex_t;
 
 
 /* Private function declarations: */
-static int matchpattern(regex_t* pattern, const char* text, int* matchlength);
-static int matchcharclass(char c, const char* str);
-static int matchstar(regex_t p, regex_t* pattern, const char* text, int* matchlength);
-static int matchplus(regex_t p, regex_t* pattern, const char* text, int* matchlength);
-static int matchone(regex_t p, char c);
+static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength);
+static int matchcharclass(const char* c, int c_size, const char* str);
+static int matchstar(regex_t p, regex_t* pattern, const char* text, int rune_size, int* matchlength);
+static int matchplus(regex_t p, regex_t* pattern, const char* text, int rune_size, int* matchlength);
+static int matchone(regex_t p, const char* c, int rune_size);
 static int matchdigit(char c);
 static int matchalpha(char c);
 static int matchwhitespace(char c);
-static int matchmetachar(char c, const char* str);
-static int matchrange(char c, const char* str);
+static int matchmetachar(const char* c, int c_size, const char* str, int rune_size);
+static int matchrange(const char* c, int c_size, const char* str, int rune_size);
 static int matchdot(char c);
 static int ismetachar(char c);
 
@@ -68,16 +71,18 @@ int re_match(const char* pattern, const char* text, int* matchlength) {
 
 int re_matchp(re_t pattern, const char* text, int* matchlength) {
     *matchlength = 0;
+    int rune_size = tsm_rune_size(text);
+    if (!rune_size) return -1;
     if (pattern != 0) {
         if (pattern[0].type == BEGIN) {
-            return ((matchpattern(&pattern[1], text, matchlength)) ? 0 : -1);
+            return ((matchpattern(&pattern[1], text, rune_size, matchlength)) ? 0 : -1);
         } else {
             int idx = -1;
 
             do {
                 idx += 1;
 
-                if (matchpattern(pattern, text, matchlength)) {
+                if (matchpattern(pattern, text, rune_size, matchlength)) {
                     if (text[0] == '\0')
                         return -1;
 
@@ -85,7 +90,11 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
                 }
                 //  Reset match length for the next starting point
                 *matchlength = 0;
-            } while (*text++ != '\0');
+                if (*text == '\0') break;
+                text += rune_size;
+                rune_size = tsm_rune_size(text);
+                if (!rune_size) break;
+            } while (1);
         }
     }
     return -1;
@@ -100,12 +109,14 @@ re_t re_compile(const char* pattern) {
     int ccl_bufidx = 1;
 
     char c;     /* current char in pattern   */
+    int c_size;
     int i = 0;  /* index into pattern        */
     int j = 0;  /* index into re_compiled    */
 
     while (pattern[i] != '\0' && (j + 1 < MAX_REGEXP_OBJECTS)) {
         c = pattern[i];
-
+        c_size = tsm_rune_size(&pattern[i]);
+        if (!c_size) return 0;  // failed to parse UTF-8 character.
         switch (c) {
         /* Meta-characters: */
         case '^': {    re_compiled[j].type = BEGIN;           } break;
@@ -135,8 +146,11 @@ re_t re_compile(const char* pattern) {
                     /* Escaped character, e.g. '.' or '$' */
                     default:
                     {
+                    c_size = tsm_rune_size(&pattern[i]);
+                    if (!c_size) return 0;
                     re_compiled[j].type = CHAR;
-                    re_compiled[j].u.ch = pattern[i];
+                    memcpy(re_compiled[j].u.ch, &pattern[i], c_size);
+                    re_compiled[j].ch_size = c_size;
                     } break;
                 }
             }
@@ -198,7 +212,8 @@ re_t re_compile(const char* pattern) {
         default:
         {
             re_compiled[j].type = CHAR;
-            re_compiled[j].u.ch = c;
+            memcpy(re_compiled[j].u.ch, &pattern[i], c_size);
+            re_compiled[j].ch_size = c_size;
         } break;
         }
         /* no buffer-out-of-bounds access on invalid patterns
@@ -207,7 +222,7 @@ re_t re_compile(const char* pattern) {
         if (pattern[i] == 0)
             return 0;
 
-        i += 1;
+        i += c_size;
         j += 1;
     }
     /* 'UNUSED' is a sentinel used to indicate end-of-pattern */
@@ -241,7 +256,7 @@ void re_print(regex_t* pattern) {
             }
             printf("]");
         } else if (pattern[i].type == CHAR) {
-            printf(" '%c'", pattern[i].u.ch);
+            printf(" '%c'", pattern[i].u.ch[0]);
         }
         printf("\n");
     }
@@ -272,14 +287,20 @@ static int matchalphanum(char c) {
     return ((c == '_') || matchalpha(c) || matchdigit(c));
 }
 
-static int matchrange(char c, const char* str) {
-    return ((c != '-')
-            && (str[0] != '\0')
-            && (str[0] != '-')
-            && (str[1] == '-')
-            && (str[2] != '\0')
-            && ((c >= str[0])
-                && (c <= str[2])));
+static int matchrange(const char* c, int c_size, const char* str, int rune_size) {
+    if ((*c == '-')
+        || (str[0] == '\0')
+        || (str[0] == '-')
+        || (str[rune_size] != '-')
+        || (str[rune_size + 1] == '\0'))
+        return 0;
+    uint32_t c_code = tsm_rune_code(c, c_size);
+    uint32_t str_code = tsm_rune_code(str, rune_size);
+    const char* str2 = &str[rune_size + 1];
+    int rune_size2 = tsm_rune_size(str2);
+    if (!rune_size2) return 0;
+    uint32_t str_code2 = tsm_rune_code(str2, rune_size2);
+    return ((c_code >= str_code) && (c_code <= str_code2));
 }
 
 static int matchdot(char c) {
@@ -295,108 +316,136 @@ static int ismetachar(char c) {
     return ((c == 's') || (c == 'S') || (c == 'w') || (c == 'W') || (c == 'd') || (c == 'D'));
 }
 
-static int matchmetachar(char c, const char* str) {
+static int matchmetachar(const char* c, int c_size, const char* str, int rune_size) {
     switch (str[0]) {
-        case 'd': return  matchdigit(c);
-        case 'D': return !matchdigit(c);
-        case 'w': return  matchalphanum(c);
-        case 'W': return !matchalphanum(c);
-        case 's': return  matchwhitespace(c);
-        case 'S': return !matchwhitespace(c);
-        default:  return (c == str[0]);
+        case 'd': return  matchdigit(*c);
+        case 'D': return !matchdigit(*c);
+        case 'w': return  matchalphanum(*c);
+        case 'W': return !matchalphanum(*c);
+        case 's': return  matchwhitespace(*c);
+        case 'S': return !matchwhitespace(*c);
+        default:  return (c_size == rune_size) && tsm_rune_cmp(c, str, c_size);
     }
 }
 
-static int matchcharclass(char c, const char* str) {
+static int matchcharclass(const char* c, int c_size, const char* str) {
     do {
-        if (matchrange(c, str)) {
+        int rune_size = tsm_rune_size(str);
+        if (!rune_size) return 0;
+        if (matchrange(c, c_size, str, rune_size)) {
             return 1;
         } else if (str[0] == '\\') {
             /* Escape-char: increment str-ptr and match on next char */
             str += 1;
-            if (matchmetachar(c, str))
+            rune_size = tsm_rune_size(str);
+            if (!rune_size) return 0;
+            if (matchmetachar(c, c_size, str, rune_size))
                 return 1;
-            else if ((c == str[0]) && !ismetachar(c))
+            else if ((c_size == rune_size) && tsm_rune_cmp(c, str, c_size) && !ismetachar(*c))
                 return 1;
-        } else if (c == str[0]) {
-            if (c == '-')
+        } else if ((c_size == rune_size) && tsm_rune_cmp(c, str, c_size)) {
+            if (*c == '-')
                 return ((str[-1] == '\0') || (str[1] == '\0'));
             else
                 return 1;
         }
-    } while (*str++ != '\0');
+        if (*str == '\0')
+            break;
+        str += rune_size;
+    } while (1);
 
     return 0;
 }
 
-static int matchone(regex_t p, char c) {
+static int matchone(regex_t p, const char* c, int c_size) {
     switch (p.type) {
-        case DOT:            return matchdot(c);
-        case CHAR_CLASS:     return  matchcharclass(c, (const char*)p.u.ccl);
-        case INV_CHAR_CLASS: return !matchcharclass(c, (const char*)p.u.ccl);
-        case DIGIT:          return  matchdigit(c);
-        case NOT_DIGIT:      return !matchdigit(c);
-        case ALPHA:          return  matchalphanum(c);
-        case NOT_ALPHA:      return !matchalphanum(c);
-        case WHITESPACE:     return  matchwhitespace(c);
-        case NOT_WHITESPACE: return !matchwhitespace(c);
+        case DOT:            return matchdot(*c);
+        case CHAR_CLASS:     return  matchcharclass(c, c_size, (const char*)p.u.ccl);
+        case INV_CHAR_CLASS: return !matchcharclass(c, c_size, (const char*)p.u.ccl);
+        case DIGIT:          return  matchdigit(*c);
+        case NOT_DIGIT:      return !matchdigit(*c);
+        case ALPHA:          return  matchalphanum(*c);
+        case NOT_ALPHA:      return !matchalphanum(*c);
+        case WHITESPACE:     return  matchwhitespace(*c);
+        case NOT_WHITESPACE: return !matchwhitespace(*c);
         case BEGIN:          return 0;
-        default:             return  (p.u.ch == c);
+        default:             return  (c_size == p.ch_size) && tsm_rune_cmp(c, p.u.ch, c_size);
     }
 }
 
-static int matchstar(regex_t p, regex_t* pattern, const char* text, int* matchlength) {
-    return matchplus(p, pattern, text, matchlength) || matchpattern(pattern, text, matchlength);
+static int matchstar(regex_t p, regex_t* pattern,
+                     const char* text, int rune_size, int* matchlength) {
+    return matchplus(p, pattern, text, rune_size, matchlength) ||
+           matchpattern(pattern, text, rune_size, matchlength);
 }
 
-static int matchplus(regex_t p, regex_t* pattern, const char* text, int* matchlength) {
+static int matchplus(regex_t p, regex_t* pattern,
+                     const char* text, int rune_size, int* matchlength) {
     const char* prepoint = text;
-    while ((text[0] != '\0') && matchone(p, *text)) {
-        text++;
-        (*matchlength)++;
+    while ((text[0] != '\0') && matchone(p, text, rune_size)) {
+        text += rune_size;
+        *matchlength += rune_size;
+        rune_size = tsm_rune_size(text);
+        if (!rune_size) return 0;
     }
-    for (; text > prepoint; text--) {
-        if (matchpattern(pattern, text, matchlength)) {
+    while (text > prepoint) {
+        if (matchpattern(pattern, text, rune_size, matchlength)) {
             *matchlength += text - prepoint;
             return 1;
         }
+        do {
+            text--;
+        } while (text > prepoint && is_multibyte_seq(*text));
+        rune_size = tsm_rune_size(text);
+        if (!rune_size) return 0;
     }
 
     return 0;
 }
 
 static int matchquestion(regex_t p, regex_t* pattern,
-                         const char* text, int* matchlength) {
+                         const char* text, int rune_size, int* matchlength) {
     if (p.type == UNUSED)
         return 1;
-    if (matchpattern(pattern, text, matchlength))
+    if (matchpattern(pattern, text, rune_size, matchlength))
         return 1;
-    if (*text && matchone(p, *text++)) {
-        if (matchpattern(pattern, text, matchlength)) {
-            (*matchlength)++;
+    if (!*text)
+        return 0;
+    int match = matchone(p, text, rune_size);
+    text += rune_size;
+    if (match) {
+        int rune_size2 = tsm_rune_size(text);
+        if (!rune_size2) return 0;
+        if (matchpattern(pattern, text, rune_size2, matchlength)) {
+            *matchlength += rune_size;
             return 1;
         }
     }
     return 0;
 }
 
-static int matchpattern(regex_t* pattern, const char* text, int* matchlength) {
+static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength) {
     int pre = *matchlength;
     do {
         if ((pattern[0].type == UNUSED) || (pattern[1].type == QUESTIONMARK))
-            return matchquestion(pattern[0], &pattern[2], text, matchlength);
+            return matchquestion(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == STAR)
-            return matchstar(pattern[0], &pattern[2], text, matchlength);
+            return matchstar(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == PLUS)
-            return matchplus(pattern[0], &pattern[2], text, matchlength);
+            return matchplus(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if ((pattern[0].type == END) && pattern[1].type == UNUSED)
             return (text[0] == '\0');
     /*  Branching is not working properly
         else if (pattern[1].type == BRANCH)
-            return (matchpattern(pattern, text) || matchpattern(&pattern[2], text));
+            return (matchpattern(pattern, text, rune_size) || matchpattern(&pattern[2], text, rune_size));
     */
-        (*matchlength)++;
-    } while ((text[0] != '\0') && matchone(*pattern++, *text++));
+        *matchlength += rune_size;
+        if ((text[0] == '\0') || !matchone(*pattern++, text, rune_size))
+            break;
+        text += rune_size;
+        rune_size = tsm_rune_size(text);
+        if (!rune_size) break;
+    } while (1);
 
     *matchlength = pre;
     return 0;

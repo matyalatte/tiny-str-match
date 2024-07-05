@@ -10,22 +10,13 @@
  */
 
 #include "str_match.h"
-
-static int bufcmp(const char *str1, const char *str2, int len) {
-    for (int i = 0; i < len; i++) {
-        if (*str1 != *str2)
-            return 0;
-        str1++;
-        str2++;
-    }
-    return 1;
-}
+#include "utf.h"
 
 static int wildcard_match_base(const char* pattern, const char* str) {
     while (*pattern != '\0') {
         // count the binary size of each character.
-        int p_rs = tsmRuneSize(pattern);
-        int s_rs = tsmRuneSize(str);
+        int p_rs = tsm_rune_size(pattern);
+        int s_rs = tsm_rune_size(str);
         if (!p_rs || !s_rs)
             return 0;  // failed to parse utf-8 characters.
 
@@ -40,7 +31,7 @@ static int wildcard_match_base(const char* pattern, const char* str) {
         if (*pattern == '?') {
             if (!*str)
                 return 0;
-        } else if (!bufcmp(pattern, str, p_rs)) {
+        } else if (!tsm_rune_cmp(pattern, str, p_rs)) {
             return 0;
         }
         pattern += p_rs;

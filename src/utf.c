@@ -1,18 +1,8 @@
 #include "str_match.h"
-
-#define ASCII_MAX 0x7F  // ascii 0x00 ~ 0x7F
-#define MULTIBYTE_SEQ_MAX 0xBF  // sequences for multibyte characters 0x80 ~ 0xBF
-#define TWO_BYTE_MAX 0xDF  // two-byte characters 0xC0 ~ 0xDF
-#define THREE_BYTE_MAX 0xEF  // three-byte characters 0xE0 ~ 0xEF
-#define FOUR_BYTE_MAX 0xF7  // four-byte characters 0xF0 ~ 0xF7
-// unused codes 0xF8 ~ 0xFF
-// #define FIVE_BYTE_MAX 0xFB
-// #define SIX_BYTE_MAX 0xFD
-
-#define is_multibyte_seq(c) ((ASCII_MAX < (uint8_t)(c)) && ((uint8_t)(c) <= MULTIBYTE_SEQ_MAX))
+#include "utf.h"
 
 // Counts the binary size of an utf-8 character.
-int tsmRuneSize(const char *c) {
+int tsm_rune_size(const char *c) {
     const uint8_t first = *c;
     if (first <= ASCII_MAX)
         return 1;  // ascii
@@ -38,4 +28,23 @@ int tsmRuneSize(const char *c) {
             return 4;  // four-byte
     }
     return 0;  // bad rune
+}
+
+uint32_t tsm_rune_code(const char *c, int rune_size) {
+    uint32_t code = 0;
+    for (int i = rune_size - 1; i >= 0; i--) {
+        code += (uint32_t)((unsigned char)*c) << (8 * i);
+        c++;
+    }
+    return code;
+}
+
+int tsm_rune_cmp(const char *c1, const char *c2, int rune_size) {
+    for (int i = 0; i < rune_size; i++) {
+        if (*c1 != *c2)
+            return 0;
+        c1++;
+        c2++;
+    }
+    return 1;
 }
