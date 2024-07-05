@@ -178,9 +178,9 @@ const RegexCase regex_cases_python[] = {
     { "a[-d]", "a-", TSM_OK },
     { "a[\\-d]", "a-", TSM_OK },
     // { "a[b-]", "a-", TSM_SYNTAX_ERROR },  // tsm returns TSM_OK for this case.
-    // { "a[]b", "-", TSM_SYNTAX_ERROR },  // tsm returns TSM_FAIL for this case.
+    { "a[]b", "-", TSM_SYNTAX_ERROR },
     { "a[", "-", TSM_SYNTAX_ERROR },
-    // { "a\\", "-", TSM_SYNTAX_ERROR },  // tsm returns TSM_FAIL for this case.
+    { "a\\", "-", TSM_SYNTAX_ERROR },
     // { "abc)", "-", TSM_SYNTAX_ERROR },  // () operator is not supported.
     // { "(abc", "-", TSM_SYNTAX_ERROR },
     { "a]", "a]", TSM_OK },
@@ -190,8 +190,8 @@ const RegexCase regex_cases_python[] = {
     { "a[^bc]d", "abd", TSM_FAIL },
     // { "a[^-b]d", "adc", TSM_OK },  // fail.
     { "a[^-b]d", "a-c", TSM_FAIL },
-    { "a[^]b]c", "a]c", TSM_FAIL },
-    // { "a[^]b]c", "adc", TSM_OK },  // I don't think this should be supported.
+    // { "a[^]b]c", "a]c", TSM_FAIL }, // I don't think this pattern should be supported.
+    // { "a[^]b]c", "adc", TSM_OK },
 
     { "$b", "b", TSM_FAIL },
     { "a+b+c", "aabbabc", TSM_OK },

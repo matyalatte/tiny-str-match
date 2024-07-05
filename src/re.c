@@ -154,14 +154,9 @@ re_t re_compile(const char* pattern) {
                     re_compiled[j].ch_size = c_size;
                     } break;
                 }
+            } else {
+                return 0;
             }
-            /* '\\' as last char in pattern -> invalid regular expression. */
-            /*
-            else {
-                re_compiled[j].type = CHAR;
-                re_compiled[j].ch = pattern[i];
-            }
-            */
         } break;
 
         /* Character class: */
@@ -199,7 +194,7 @@ re_t re_compile(const char* pattern) {
                 }
                 ccl_buf[ccl_bufidx++] = pattern[i];
             }
-            if (ccl_bufidx >= MAX_CHAR_CLASS_LEN) {
+            if (ccl_bufidx >= MAX_CHAR_CLASS_LEN || ccl_bufidx == buf_begin) {
                 /* Catches cases such as [00000000000000000000000000000000000000][ */
                 // fputs("exceeded internal buffer!\n", stderr);
                 return 0;
