@@ -118,7 +118,6 @@ const RegexCase regex_cases_utf[] = {
     { u8"[\\\U0001F600]+", u8"\U0001F600", TSM_OK },
     { u8"[\\\U0001F600]+", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
     { u8"[\\\U0001F600]+", "a", TSM_FAIL },
-
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_UTF,
@@ -140,7 +139,7 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Escaped,
 // https://github.com/python/cpython/blob/main/Lib/test/re_tests.py
 const RegexCase regex_cases_python[] = {
     // { ")", "", TSM_SYNTAX_ERROR },  // () operator does not supported yet.
-    // { "", "", TSM_OK },  // this fails somehow
+    { "", "", TSM_OK },
     { "abc", "abc", TSM_OK },
     { "abc", "xbc", TSM_FAIL },
     { "abc", "axc", TSM_FAIL },
@@ -165,7 +164,7 @@ const RegexCase regex_cases_python[] = {
     { "^abc$", "aabc", TSM_FAIL },
     { "abc$", "aabc", TSM_OK },
     { "^", "abc", TSM_OK },
-    // { "$", "abc", TSM_OK },  // This fails somehow
+    // { "$", "abc", TSM_OK },  // fail
     { "a.c", "abc", TSM_OK },
     { "a.c", "axc", TSM_OK },
     { "a.*c", "axyzc", TSM_OK },
@@ -197,7 +196,7 @@ const RegexCase regex_cases_python[] = {
     { "a+b+c", "aabbabc", TSM_OK },
     { "[^ab]*", "cde", TSM_OK },
     { "abc", "", TSM_FAIL },
-    // { "a*", "", TSM_OK },  // This fails somehow
+    { "a*", "", TSM_OK },
     { "abcd*efg", "abcdefg", TSM_OK },
     { "ab*", "xabyabbbz", TSM_OK },
     { "ab*", "xayabbbz", TSM_OK },
@@ -214,13 +213,28 @@ const RegexCase regex_cases_python[] = {
     { "\\D+", "1234abc5678", TSM_OK },
     { "[\\D+]", "1234abc5678", TSM_OK },
     { "[\\da-fA-F]+", "123abc", TSM_OK },
-    // TODO: add more tese cases
+    // TODO: add more test cases
     // { "", "", TSM_OK },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Python,
     RegexTest,
     ::testing::ValuesIn(regex_cases_python));
+
+// Original test cases.
+const RegexCase regex_cases_tsm[] = {
+    { "^[a-zA-Z_][z-zA-Z0-9_]*", "a", TSM_OK },
+    { "^[a-zA-Z_][z-zA-Z0-9_]*", "abcd1234_", TSM_OK },
+    { "^[a-zA-Z_][z-zA-Z0-9_]*", "1", TSM_FAIL },
+    { "^[a-zA-Z_][z-zA-Z0-9_]*", "1bcd1234_", TSM_FAIL },
+    { ".", "", TSM_FAIL },
+    { "^.$", "", TSM_FAIL },
+    { ".*", "", TSM_OK },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Tsm,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_tsm));
 
 TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();

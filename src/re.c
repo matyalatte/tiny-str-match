@@ -84,8 +84,9 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
 
             do {
                 if (matchpattern(pattern, text, rune_size, matchlength)) {
-                    if (text[0] == '\0')
-                        return -1;
+                    // Maybe we don't need this
+                    // if (text[0] == '\0')
+                    //     return -1;
 
                     return (int)(text - prepoint);
                 }
