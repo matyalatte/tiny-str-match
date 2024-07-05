@@ -135,6 +135,7 @@ const WildcardCase wildcard_cases_utf[] = {
     { u8"\u00c4*\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
     { u8"\u00c4?\U0001F600", u8"\u00c4\U0001F600", TSM_FAIL },
     { u8"\u00c4?\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
+    { u8"\U0001F600?\U0001F602", u8"\U0001F600\U0001F601\U0001F602", TSM_OK },
 };
 
 INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_UTF,
