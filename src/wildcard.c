@@ -40,7 +40,7 @@ static int wildcard_match_base(const char* pattern, const char* str) {
     return !*str;
 }
 
-int tsmWildcardMatch(const char *pattern, const char *str) {
+int tsm_wildcard_match(const char *pattern, const char *str) {
     if (pattern == NULL || str == NULL)
         return 0;
     return wildcard_match_base(pattern, str);

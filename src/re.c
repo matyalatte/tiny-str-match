@@ -262,7 +262,7 @@ void re_print(regex_t* pattern) {
     }
 }
 
-int tsmRegexMatch(const char *pattern, const char *str) {
+int tsm_regex_match(const char *pattern, const char *str) {
     if (pattern == NULL || str == NULL)
         return 0;
     int matchlength;

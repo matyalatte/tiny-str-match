@@ -27,7 +27,7 @@ extern "C" {
  * @param str A string.
  * @returns One when the string has the wildcard pattern. Zero if not.
  */
-_TSM_EXTERN int tsmWildcardMatch(const char *pattern, const char *str);
+_TSM_EXTERN int tsm_wildcard_match(const char *pattern, const char *str);
 
 /**
  * Checks if a string matches a regex pattern or not.
@@ -36,7 +36,7 @@ _TSM_EXTERN int tsmWildcardMatch(const char *pattern, const char *str);
  * @param str A string.
  * @returns One when the string has the regex pattern. Zero if not.
  */
-_TSM_EXTERN int tsmRegexMatch(const char *pattern, const char *str);
+_TSM_EXTERN int tsm_regex_match(const char *pattern, const char *str);
 
 
 #ifdef __cplusplus
