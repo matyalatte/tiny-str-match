@@ -14,9 +14,9 @@ class WildcardTest : public ::testing::TestWithParam<WildcardCase> {
 
 // Test with null pointers.
 const WildcardCase wildcard_cases_null[] = {
-    { "test", NULL, 0 },
-    { NULL, "test", 0 },
-    { NULL, NULL, 0 },
+    { "test", NULL, TSM_FAIL },
+    { NULL, "test", TSM_FAIL },
+    { NULL, NULL, TSM_FAIL },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Null,
@@ -25,12 +25,12 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Null,
 
 // Test with bad runes.
 const WildcardCase wildcard_cases_bad[] = {
-    { "a", "a\x81", 0},
-    { "a\x81", "a\x81", 0},
-    { "a*", "a\x81", 0},
-    { "a\xc0 ", "a\xc0 ", 0},  // two-byte bad rune
-    { "a\xe0 ", "a\xe0 ", 0},  // three-byte bad rune
-    { "a\xf0 ", "a\xf0 ", 0},  // four-byte bad rune
+    { "a", "a\x81", TSM_FAIL },
+    { "a\x81", "a\x81", TSM_FAIL },
+    { "a*", "a\x81", TSM_FAIL },
+    { "a\xc0 ", "a\xc0 ", TSM_FAIL },  // two-byte bad rune
+    { "a\xe0 ", "a\xe0 ", TSM_FAIL },  // three-byte bad rune
+    { "a\xf0 ", "a\xf0 ", TSM_FAIL },  // four-byte bad rune
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Bad,
@@ -39,10 +39,10 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Bad,
 
 // Test with patterns have no wildcard characters.
 const WildcardCase wildcard_cases_nocard[] = {
-    { "", "", 1},
-    { "", "test", 0},
-    { "test", "", 0},
-    { "test", "test", 1},
+    { "", "", TSM_OK },
+    { "", "test", TSM_FAIL },
+    { "test", "", TSM_FAIL },
+    { "test", "test", TSM_OK },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Nocard,
@@ -51,16 +51,16 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Nocard,
 
 // Test with patterns start with a wildcard character.
 const WildcardCase wildcard_cases_first[] = {
-    { "*case", "", 0 },
-    { "*case", "test", 0 },
-    { "*case", "case", 1 },
-    { "*case", "fcase", 1 },
-    { "*case", "foocase", 1 },
-    { "?case", "", 0 },
-    { "?case", "test", 0 },
-    { "?case", "case", 0 },
-    { "?case", "fcase", 1 },
-    { "?case", "foocase", 0 },
+    { "*case", "", TSM_FAIL },
+    { "*case", "test", TSM_FAIL },
+    { "*case", "case", TSM_OK },
+    { "*case", "fcase", TSM_OK },
+    { "*case", "foocase", TSM_OK },
+    { "?case", "", TSM_FAIL },
+    { "?case", "test", TSM_FAIL },
+    { "?case", "case", TSM_FAIL },
+    { "?case", "fcase", TSM_OK },
+    { "?case", "foocase", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_First,
@@ -69,18 +69,18 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_First,
 
 // Test with patterns have a wildcard character.
 const WildcardCase wildcard_cases_mid[] = {
-    { "test*case", "", 0 },
-    { "test*case", "test", 0 },
-    { "test*case", "case", 0 },
-    { "test*case", "testcase", 1 },
-    { "test*case", "testfcase", 1 },
-    { "test*case", "testfoocase", 1 },
-    { "test?case", "", 0 },
-    { "test?case", "test", 0 },
-    { "test?case", "case", 0 },
-    { "test?case", "testcase", 0 },
-    { "test?case", "testfcase", 1 },
-    { "test?case", "testfoocase", 0 },
+    { "test*case", "", TSM_FAIL },
+    { "test*case", "test", TSM_FAIL },
+    { "test*case", "case", TSM_FAIL },
+    { "test*case", "testcase", TSM_OK },
+    { "test*case", "testfcase", TSM_OK },
+    { "test*case", "testfoocase", TSM_OK },
+    { "test?case", "", TSM_FAIL },
+    { "test?case", "test", TSM_FAIL },
+    { "test?case", "case", TSM_FAIL },
+    { "test?case", "testcase", TSM_FAIL },
+    { "test?case", "testfcase", TSM_OK },
+    { "test?case", "testfoocase", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Mid,
@@ -89,16 +89,16 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Mid,
 
 // Test with patterns end with a wildcard character.
 const WildcardCase wildcard_cases_last[] = {
-    { "test*", "", 0 },
-    { "test*", "test", 1 },
-    { "test*", "case", 0 },
-    { "test*", "testf", 1 },
-    { "test*", "testfoo", 1 },
-    { "test?", "", 0 },
-    { "test?", "test", 0 },
-    { "test?", "case", 0 },
-    { "test?", "testf", 1 },
-    { "test?", "testfoo", 0 },
+    { "test*", "", TSM_FAIL },
+    { "test*", "test", TSM_OK },
+    { "test*", "case", TSM_FAIL },
+    { "test*", "testf", TSM_OK },
+    { "test*", "testfoo", TSM_OK },
+    { "test?", "", TSM_FAIL },
+    { "test?", "test", TSM_FAIL },
+    { "test?", "case", TSM_FAIL },
+    { "test?", "testf", TSM_OK },
+    { "test?", "testfoo", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Last,
@@ -107,34 +107,34 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Last,
 
 // Test with UTF8 strings.
 const WildcardCase wildcard_cases_utf[] = {
-    { "test*case", u8"test\u00c4case", 1 },  // \u00c4 == "Ä", two-byte
-    { "test*case", u8"test\u00c4\u00c4case", 1 },
-    { "test?case", u8"test\u00c4case", 1 },
-    { "test?case", u8"test\u00c4\u00c4case", 0 },
-    { u8"\u00c4*\u00c4", u8"\u00c4\u00c4", 1 },
-    { u8"\u00c4*\u00c4", u8"\u00c4a\u00c4", 1 },
-    { u8"\u00c4?\u00c4", u8"\u00c4\u00c4", 0 },
-    { u8"\u00c4?\u00c4", u8"\u00c4a\u00c4", 1 },
-    { "test*case", u8"test\u3042case", 1 },  // \u3042 == "あ", three-byte
-    { "test*case", u8"test\u3042\u3042case", 1 },
-    { "test?case", u8"test\u3042case", 1 },
-    { "test?case", u8"test\u3042\u3042case", 0 },
-    { u8"\u3042*\u3042", u8"\u3042\u3042", 1 },
-    { u8"\u3042*\u3042", u8"\u3042a\u3042", 1 },
-    { u8"\u3042?\u3042", u8"\u3042\u3042", 0 },
-    { u8"\u3042?\u3042", u8"\u3042a\u3042", 1 },
-    { "test*case", u8"test\U0001F600case", 1 },  // \U0001F600 == "😀", four-byte
-    { "test*case", u8"test\U0001F600\U0001F600case", 1 },
-    { "test?case", u8"test\U0001F600case", 1 },
-    { "test?case", u8"test\U0001F600\U0001F600case", 0 },
-    { u8"\U0001F600*\U0001F600", u8"\U0001F600\U0001F600", 1 },
-    { u8"\U0001F600*\U0001F600", u8"\U0001F600a\U0001F600", 1 },
-    { u8"\U0001F600?\U0001F600", u8"\U0001F600\U0001F600", 0 },
-    { u8"\U0001F600?\U0001F600", u8"\U0001F600a\U0001F600", 1 },
-    { u8"\u00c4*\U0001F600", u8"\u00c4\U0001F600", 1 },
-    { u8"\u00c4*\U0001F600", u8"\u00c4\u3042\U0001F600", 1 },
-    { u8"\u00c4?\U0001F600", u8"\u00c4\U0001F600", 0 },
-    { u8"\u00c4?\U0001F600", u8"\u00c4\u3042\U0001F600", 1 },
+    { "test*case", u8"test\u00c4case", TSM_OK },  // \u00c4 == "Ä", two-byte
+    { "test*case", u8"test\u00c4\u00c4case", TSM_OK },
+    { "test?case", u8"test\u00c4case", TSM_OK },
+    { "test?case", u8"test\u00c4\u00c4case", TSM_FAIL },
+    { u8"\u00c4*\u00c4", u8"\u00c4\u00c4", TSM_OK },
+    { u8"\u00c4*\u00c4", u8"\u00c4a\u00c4", TSM_OK },
+    { u8"\u00c4?\u00c4", u8"\u00c4\u00c4", TSM_FAIL },
+    { u8"\u00c4?\u00c4", u8"\u00c4a\u00c4", TSM_OK },
+    { "test*case", u8"test\u3042case", TSM_OK },  // \u3042 == "あ", three-byte
+    { "test*case", u8"test\u3042\u3042case", TSM_OK },
+    { "test?case", u8"test\u3042case", TSM_OK },
+    { "test?case", u8"test\u3042\u3042case", TSM_FAIL },
+    { u8"\u3042*\u3042", u8"\u3042\u3042", TSM_OK },
+    { u8"\u3042*\u3042", u8"\u3042a\u3042", TSM_OK },
+    { u8"\u3042?\u3042", u8"\u3042\u3042", TSM_FAIL },
+    { u8"\u3042?\u3042", u8"\u3042a\u3042", TSM_OK },
+    { "test*case", u8"test\U0001F600case", TSM_OK },  // \U0001F600 == "😀", four-byte
+    { "test*case", u8"test\U0001F600\U0001F600case", TSM_OK },
+    { "test?case", u8"test\U0001F600case", TSM_OK },
+    { "test?case", u8"test\U0001F600\U0001F600case", TSM_FAIL },
+    { u8"\U0001F600*\U0001F600", u8"\U0001F600\U0001F600", TSM_OK },
+    { u8"\U0001F600*\U0001F600", u8"\U0001F600a\U0001F600", TSM_OK },
+    { u8"\U0001F600?\U0001F600", u8"\U0001F600\U0001F600", TSM_FAIL },
+    { u8"\U0001F600?\U0001F600", u8"\U0001F600a\U0001F600", TSM_OK },
+    { u8"\u00c4*\U0001F600", u8"\u00c4\U0001F600", TSM_OK },
+    { u8"\u00c4*\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
+    { u8"\u00c4?\U0001F600", u8"\u00c4\U0001F600", TSM_FAIL },
+    { u8"\u00c4?\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_UTF,
@@ -143,12 +143,12 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_UTF,
 
 // Test with patterns have multiple wildcard characters.
 const WildcardCase wildcard_cases_multicard[] = {
-    { "test*case*foo?bar??", "testcasefooabarbc", 1},
-    { "test*case*foo?bar??", "testfoocasebarfooabarbc", 1},
-    { "test*case*foo?bar??", "testcasefoobarbc", 0},
-    { "test*case*foo?bar??", "testcasefooabarb", 0},
-    { "test*case*foo?bar??", "testcasfooabarbc", 0},
-    { "test*case*foo?bar??", "tescasefooabarbc", 0},
+    { "test*case*foo?bar??", "testcasefooabarbc", TSM_OK },
+    { "test*case*foo?bar??", "testfoocasebarfooabarbc", TSM_OK },
+    { "test*case*foo?bar??", "testcasefoobarbc", TSM_FAIL },
+    { "test*case*foo?bar??", "testcasefooabarb", TSM_FAIL },
+    { "test*case*foo?bar??", "testcasfooabarbc", TSM_FAIL },
+    { "test*case*foo?bar??", "tescasefooabarbc", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Multicard,

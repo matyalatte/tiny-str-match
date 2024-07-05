@@ -262,11 +262,17 @@ void re_print(regex_t* pattern) {
     }
 }
 
-int tsm_regex_match(const char *pattern, const char *str) {
+TsmResult tsm_regex_match(const char *pattern, const char *str) {
     if (pattern == NULL || str == NULL)
-        return 0;
+        return TSM_FAIL;
+
+    re_t compiled = re_compile(pattern);
+    if (!compiled)
+        return TSM_SYNTAX_ERROR;
+
     int matchlength;
-    return re_match(pattern, str, &matchlength) != -1;
+    int res = re_matchp(compiled, str, &matchlength);
+    return (res == -1 ? TSM_FAIL : TSM_OK);
 }
 
 

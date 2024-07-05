@@ -12,36 +12,36 @@
 #include "str_match.h"
 #include "utf.h"
 
-static int wildcard_match_base(const char* pattern, const char* str) {
+static TsmResult wildcard_match_base(const char* pattern, const char* str) {
     while (*pattern != '\0') {
         // count the binary size of each character.
         int p_rs = tsm_rune_size(pattern);
         int s_rs = tsm_rune_size(str);
         if (!p_rs || !s_rs)
-            return 0;  // failed to parse utf-8 characters.
+            return TSM_FAIL;  // failed to parse utf-8 characters.
 
         if (*pattern == '*') {
-            if (wildcard_match_base(pattern + p_rs, str))
-                return 1;
+            if (wildcard_match_base(pattern + p_rs, str) == TSM_OK)
+                return TSM_OK;
             else if (!*str)
-                return 0;
+                return TSM_FAIL;
             str += s_rs;
             continue;
         }
         if (*pattern == '?') {
             if (!*str)
-                return 0;
+                return TSM_FAIL;
         } else if (!tsm_rune_cmp(pattern, str, p_rs)) {
-            return 0;
+            return TSM_FAIL;
         }
         pattern += p_rs;
         str += s_rs;
     }
-    return !*str;
+    return (*str == 0 ? TSM_OK : TSM_FAIL);
 }
 
-int tsm_wildcard_match(const char *pattern, const char *str) {
+TsmResult tsm_wildcard_match(const char *pattern, const char *str) {
     if (pattern == NULL || str == NULL)
-        return 0;
+        return TSM_FAIL;
     return wildcard_match_base(pattern, str);
 }

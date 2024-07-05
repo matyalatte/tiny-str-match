@@ -15,8 +15,21 @@ extern "C" {
 #endif
 #endif
 
+#define _TSM_ENUM(s) typedef int s; enum
+
 // Version info
 #define TSM_VERSION "0.1.0"
+
+/**
+ * Error status for tsm_* functions.
+ *
+ * @enum TsmResult
+ */
+_TSM_ENUM(TsmResult) {
+    TSM_OK = 0,
+    TSM_FAIL = 1,
+    TSM_SYNTAX_ERROR = 2,
+};
 
 /**
  * Checks if a string matches a wildcard pattern or not.
@@ -25,18 +38,18 @@ extern "C" {
  *
  * @param pattern A wildcard pattern.
  * @param str A string.
- * @returns One when the string has the wildcard pattern. Zero if not.
+ * @returns Zero when the string has the wildcard pattern. One if not.
  */
-_TSM_EXTERN int tsm_wildcard_match(const char *pattern, const char *str);
+_TSM_EXTERN TsmResult tsm_wildcard_match(const char *pattern, const char *str);
 
 /**
  * Checks if a string matches a regex pattern or not.
  *
  * @param pattern A regex pattern.
  * @param str A string.
- * @returns One when the string has the regex pattern. Zero if not.
+ * @returns Zero when found the regex pattern. One when not found. Two when got a syntax error.
  */
-_TSM_EXTERN int tsm_regex_match(const char *pattern, const char *str);
+_TSM_EXTERN TsmResult tsm_regex_match(const char *pattern, const char *str);
 
 
 #ifdef __cplusplus
