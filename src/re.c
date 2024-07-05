@@ -23,6 +23,7 @@
  *   '{n}'      Match n times
  *   '{n,}'     Match n or more times
  *   '{n,m}'    Match n to m times
+ *   '|'        Branch Or, e.g. a|A, \w|\s
  *
  */
 
@@ -42,7 +43,7 @@
 enum {
     UNUSED, DOT, BEGIN, END, QUESTIONMARK, STAR, PLUS,
     CHAR, CHAR_CLASS, INV_CHAR_CLASS, DIGIT, NOT_DIGIT,
-    ALPHA, NOT_ALPHA, WHITESPACE, NOT_WHITESPACE, /* BRANCH */
+    ALPHA, NOT_ALPHA, WHITESPACE, NOT_WHITESPACE, BRANCH,
     TIMES,
 };
 
@@ -90,9 +91,11 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
     *matchlength = 0;
     int rune_size = tsm_rune_size(text);
     if (!rune_size) return -1;
+
     if (pattern != 0) {
         if (pattern[0].type == BEGIN) {
-            return ((matchpattern(&pattern[1], text, rune_size, matchlength)) ? 0 : -1);
+            if (matchpattern(&pattern[1], text, rune_size, matchlength))
+                return 0;
         } else {
             const char* prepoint = text;
 
@@ -109,9 +112,18 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
                 if (*text == '\0') break;
                 text += rune_size;
                 rune_size = tsm_rune_size(text);
-                if (!rune_size) break;
+                if (!rune_size) return -1;
             } while (1);
+            text = prepoint;
         }
+    }
+
+    // move to the next branch
+    while (pattern->type != UNUSED) {
+        if (pattern->type == BRANCH) {
+            return re_matchp(pattern + 1, text, matchlength);
+        }
+        pattern++;
     }
     return -1;
 }
@@ -141,7 +153,7 @@ re_t re_compile(const char* pattern) {
         case '*': {    re_compiled[j].type = STAR;            } break;
         case '+': {    re_compiled[j].type = PLUS;            } break;
         case '?': {    re_compiled[j].type = QUESTIONMARK;    } break;
-    /*  case '|': {    re_compiled[j].type = BRANCH;          } break; <-- not working properly */
+        case '|': {    re_compiled[j].type = BRANCH;          } break;
 
         /* Escaped character-classes (\s \w ...): */
         case '\\':
@@ -486,7 +498,7 @@ static int matchplus(regex_t p, regex_t* pattern,
 
 static int matchquestion(regex_t p, regex_t* pattern,
                          const char* text, int rune_size, int* matchlength) {
-    if (p.type == UNUSED)
+    if (p.type == UNUSED || p.type == BRANCH)
         return 1;
     if (matchpattern(pattern, text, rune_size, matchlength))
         return 1;
@@ -534,21 +546,17 @@ static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned sh
 static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength) {
     int pre = *matchlength;
     do {
-        if ((pattern[0].type == UNUSED) || (pattern[1].type == QUESTIONMARK))
+        if ((pattern[0].type == UNUSED) || (pattern[0].type == BRANCH) || (pattern[1].type == QUESTIONMARK))
             return matchquestion(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == STAR)
             return matchstar(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == PLUS)
             return matchplus(pattern[0], &pattern[2], text, rune_size, matchlength);
-        else if ((pattern[0].type == END) && pattern[1].type == UNUSED)
+        else if ((pattern[0].type == END) && (pattern[1].type == UNUSED || pattern[1].type == BRANCH))
             return (text[0] == '\0');
         else if (pattern[1].type == TIMES)
             return matchtimes(pattern[0], &pattern[2], pattern[1].u.times.n, pattern[1].u.times.m,
                               text, rune_size, matchlength);
-    /*  Branching is not working properly
-        else if (pattern[1].type == BRANCH)
-            return (matchpattern(pattern, text, rune_size) || matchpattern(&pattern[2], text, rune_size));
-    */
         *matchlength += rune_size;
         if ((text[0] == '\0') || !matchone(*pattern++, text, rune_size))
             break;

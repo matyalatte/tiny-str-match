@@ -130,6 +130,9 @@ const RegexCase regex_cases_trc[] = {
     { "\\w{3,}", "ab", TSM_FAIL },
     { "\\w{2,3}", "abc", TSM_OK },
     { "\\w{3,4}", "ab", TSM_FAIL },
+    { "0|1", "0", TSM_OK },
+    { "0|", "0", TSM_OK },
+    { "0|", "", TSM_OK },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Trc,
@@ -165,6 +168,7 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Escaped,
 // Test cases from cpython.
 // https://github.com/python/cpython/blob/main/Lib/test/re_tests.py
 const RegexCase regex_cases_python[] = {
+    { "Python|Perl|Tcl", "Perl", TSM_OK },
     // { ")", "", TSM_SYNTAX_ERROR },  // () operator does not supported yet.
     { "", "", TSM_OK },
     { "abc", "abc", TSM_OK },
@@ -219,11 +223,15 @@ const RegexCase regex_cases_python[] = {
     // { "a[^]b]c", "a]c", TSM_FAIL }, // I don't think this pattern should be supported.
     // { "a[^]b]c", "adc", TSM_OK },
 
+    { "ab|cd", "abc", TSM_OK },
+    { "ab|cd", "abcd", TSM_OK },
+
     { "$b", "b", TSM_FAIL },
     { "a+b+c", "aabbabc", TSM_OK },
     { "[^ab]*", "cde", TSM_OK },
     { "abc", "", TSM_FAIL },
     { "a*", "", TSM_OK },
+    { "a|b|c|d|e", "e", TSM_OK },
     { "abcd*efg", "abcdefg", TSM_OK },
     { "ab*", "xabyabbbz", TSM_OK },
     { "ab*", "xayabbbz", TSM_OK },
@@ -294,6 +302,40 @@ const RegexCase regex_cases_times[] = {
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Times,
     RegexTest,
     ::testing::ValuesIn(regex_cases_times));
+
+// Test with | operator.
+const RegexCase regex_cases_branch[] = {
+    { "cat|dog", "cat", TSM_OK },
+    { "cat|dog", "dog", TSM_OK },
+    { "cat|dog", "mouse", TSM_FAIL },
+    { "^cat|dog$", "catt", TSM_OK },
+    { "^cat|dog$", "adog", TSM_OK },
+    { "^cat|dog$", "acat", TSM_FAIL },
+    { "^cat|dog$", "dogg", TSM_FAIL },
+    { "[a-z]|D", "b", TSM_OK },
+    { "[a-z]|D", "D", TSM_OK },
+    { "[a-z]|D", "1", TSM_FAIL },
+    { "\\d|\\s", " ", TSM_OK },
+    { "\\d|\\s", "0", TSM_OK },
+    { "\\d|\\s", "a", TSM_FAIL },
+    { "ab*|c", "a", TSM_OK },
+    { "ab+|c", "a", TSM_FAIL },
+    { "ab*|c", "ab", TSM_OK },
+    { "ab*|c", "abbbb", TSM_OK },
+    { "ab*|c", "bbbb", TSM_FAIL },
+    { "ab*|c", "c", TSM_OK },
+    { "^c$|^go$|^rust$", "c", TSM_OK },
+    { "^c$|^go$|^rust$", "cpp", TSM_FAIL },
+    { "^c$|^go$|^rust$", "go", TSM_OK },
+    { "^c$|^go$|^rust$", "togo", TSM_FAIL },
+    { "^c$|^go$|^rust$", "goto", TSM_FAIL },
+    { "^c$|^go$|^rust$", "rust", TSM_OK },
+    { "[a-z]*\\.png|[a-z]*\\.jpg|[a-z]*\\.bmp", "alpha.jpg", TSM_OK },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Branch,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_branch));
 
 TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();

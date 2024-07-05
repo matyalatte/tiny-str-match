@@ -23,6 +23,7 @@
  *   '{n}'      Match n times
  *   '{n,}'     Match n or more times
  *   '{n,m}'    Match n to m times
+ *   '|'        Branch Or, e.g. a|A, \w|\s
  *
  */
 

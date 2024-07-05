@@ -60,6 +60,7 @@ int main(void) {
 -   `\W`       Non-alphanumeric
 -   `\d`       Digits, [0-9]
 -   `\D`       Non-digits
+-   `|`        Branch Or, e.g. a|A, \w|\s
 
 ## Supported wildcard-operators
 
