@@ -80,16 +80,14 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
         if (pattern[0].type == BEGIN) {
             return ((matchpattern(&pattern[1], text, rune_size, matchlength)) ? 0 : -1);
         } else {
-            int idx = -1;
+            const char* prepoint = text;
 
             do {
-                idx += 1;
-
                 if (matchpattern(pattern, text, rune_size, matchlength)) {
                     if (text[0] == '\0')
                         return -1;
 
-                    return idx;
+                    return (int)(text - prepoint);
                 }
                 //  Reset match length for the next starting point
                 *matchlength = 0;
