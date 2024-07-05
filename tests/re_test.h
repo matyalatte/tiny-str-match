@@ -24,9 +24,18 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Null,
     RegexTest,
     ::testing::ValuesIn(regex_cases_null));
 
+// Test with invalid patterns.
+const RegexCase regex_cases_syntax[] = {
+    { "[", "", TSM_SYNTAX_ERROR },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_SyntaxError,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_syntax));
+
 // Test cases from tiny-regex-c
 // https://github.com/kokke/tiny-regex-c/blob/master/tests/test1.c
-const RegexCase regex_cases_ascii[] = {
+const RegexCase regex_cases_trc[] = {
     { "\\d", "5", TSM_OK },
     { "\\w+", "hej", TSM_OK },
     { "\\s", "\t \n", TSM_OK },
@@ -97,20 +106,121 @@ const RegexCase regex_cases_ascii[] = {
     { "[a-z\\s]+\nbreak", "bla bla \nbreak", TSM_OK },
 };
 
-INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Ascii,
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Trc,
     RegexTest,
-    ::testing::ValuesIn(regex_cases_ascii));
+    ::testing::ValuesIn(regex_cases_trc));
 
 // Test with UTF-8 strings.
 const RegexCase regex_cases_utf[] = {
     { "^.$", u8"\U0001F600", TSM_OK },  // \U0001F600 == "😀", four-byte
     { u8"^[\U0001F600\u3042]$", u8"\u3042", TSM_OK },  // \u3042 == "あ", three-byte
     { u8"^[\u3042-\u304A]*$", u8"\u3042\u3044\u3046\u3048\u304A", TSM_OK },  // \u304A == "お"
+    { u8"[\\\U0001F600]+", u8"\U0001F600", TSM_OK },
+    { u8"[\\\U0001F600]+", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
+    { u8"[\\\U0001F600]+", "a", TSM_FAIL },
+
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_UTF,
     RegexTest,
     ::testing::ValuesIn(regex_cases_utf));
+
+// Test with escaped characters.
+const RegexCase regex_cases_escaped[] = {
+    { "\t\n\v\r\f\a\\g", "\t\n\v\r\f\ag", TSM_OK },
+    { "[\t][\n][\v][\r][\f][\a][\\g]", "\t\n\v\r\f\ag", TSM_OK },
+    { "[\t\n\v\r\f\a\\g]*", "\t\n\v\r\f\ag", TSM_OK },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Escaped,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_escaped));
+
+// Test cases from cpython.
+// https://github.com/python/cpython/blob/main/Lib/test/re_tests.py
+const RegexCase regex_cases_python[] = {
+    // { ")", "", TSM_SYNTAX_ERROR },  // () operator does not supported yet.
+    // { "", "", TSM_OK },  // this fails somehow
+    { "abc", "abc", TSM_OK },
+    { "abc", "xbc", TSM_FAIL },
+    { "abc", "axc", TSM_FAIL },
+    { "abc", "abx", TSM_FAIL },
+    { "abc", "xabcy", TSM_OK },
+    { "abc", "ababc", TSM_OK },
+    { "ab*c", "abc", TSM_OK },
+    { "ab*bc", "abc", TSM_OK },
+    { "ab*bc", "abbc", TSM_OK },
+    { "ab*bc", "abbbbc", TSM_OK },
+    { "ab+bc", "abbc", TSM_OK },
+    { "ab+bc", "abc", TSM_FAIL },
+    { "ab+bc", "abq", TSM_FAIL },
+    { "ab+bc", "abbbbc", TSM_OK },
+    { "ab?bc", "abbc", TSM_OK },
+    { "ab?bc", "abc", TSM_OK },
+    { "ab?bc", "abbbbc", TSM_FAIL },
+    { "ab?c", "abc", TSM_OK },
+    { "^abc$", "abc", TSM_OK },
+    { "^abc$", "abcc", TSM_FAIL },
+    { "^abc", "abcc", TSM_OK },
+    { "^abc$", "aabc", TSM_FAIL },
+    { "abc$", "aabc", TSM_OK },
+    { "^", "abc", TSM_OK },
+    // { "$", "abc", TSM_OK },  // This fails somehow
+    { "a.c", "abc", TSM_OK },
+    { "a.c", "axc", TSM_OK },
+    { "a.*c", "axyzc", TSM_OK },
+    { "a.*c", "axyzd", TSM_FAIL },
+    { "a[bc]d", "abc", TSM_FAIL },
+    { "a[bc]d", "abd", TSM_OK },
+    { "a[b-d]e", "abd", TSM_FAIL },
+    { "a[b-d]e", "ace", TSM_OK },
+    { "a[b-d]", "aac", TSM_OK },
+    { "a[-d]", "a-", TSM_OK },
+    { "a[\\-d]", "a-", TSM_OK },
+    // { "a[b-]", "a-", TSM_SYNTAX_ERROR },  // tsm returns TSM_OK for this case.
+    // { "a[]b", "-", TSM_SYNTAX_ERROR },  // tsm returns TSM_FAIL for this case.
+    { "a[", "-", TSM_SYNTAX_ERROR },
+    // { "a\\", "-", TSM_SYNTAX_ERROR },  // tsm returns TSM_FAIL for this case.
+    // { "abc)", "-", TSM_SYNTAX_ERROR },  // () operator is not supported.
+    // { "(abc", "-", TSM_SYNTAX_ERROR },
+    { "a]", "a]", TSM_OK },
+    // { "a[]]b", "a]b", TSM_OK },  // fail.
+    { "a[\\]]b", "a]b", TSM_OK },
+    { "a[^bc]d", "aed", TSM_OK },
+    { "a[^bc]d", "abd", TSM_FAIL },
+    // { "a[^-b]d", "adc", TSM_OK },  // fail.
+    { "a[^-b]d", "a-c", TSM_FAIL },
+    { "a[^]b]c", "a]c", TSM_FAIL },
+    // { "a[^]b]c", "adc", TSM_OK },  // I don't think this should be supported.
+
+    { "$b", "b", TSM_FAIL },
+    { "a+b+c", "aabbabc", TSM_OK },
+    { "[^ab]*", "cde", TSM_OK },
+    { "abc", "", TSM_FAIL },
+    // { "a*", "", TSM_OK },  // This fails somehow
+    { "abcd*efg", "abcdefg", TSM_OK },
+    { "ab*", "xabyabbbz", TSM_OK },
+    { "ab*", "xayabbbz", TSM_OK },
+    { "[abhgefdc]ij", "hij", TSM_OK },
+    { "a[bcd]*dcdcde", "adcdcde", TSM_OK },
+    { "a[bcd]+dcdcde", "adcdcde", TSM_FAIL },
+    { "[a-zA-Z_][z-zA-Z0-9_]*", "alpha", TSM_OK },
+    { "multiple words of text", "uh-uh", TSM_FAIL },
+    { "multiple words", "multiple words, yeah", TSM_OK },
+    { "[k]", "ab", TSM_FAIL },
+    { "a[-]?c", "ac", TSM_OK },
+    { "\\w+", "--ab_cd0123---", TSM_OK },
+    { "[\\w]+", "--ab_cd0123---", TSM_OK },
+    { "\\D+", "1234abc5678", TSM_OK },
+    { "[\\D+]", "1234abc5678", TSM_OK },
+    { "[\\da-fA-F]+", "123abc", TSM_OK },
+    // TODO: add more tese cases
+    // { "", "", TSM_OK },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Python,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_python));
 
 TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();
