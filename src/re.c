@@ -48,13 +48,13 @@ enum {
 };
 
 typedef struct regex_t {
-    unsigned char  type;   /* CHAR, STAR, etc.                      */
+    uint8_t  type;   /* CHAR, STAR, etc.                      */
     union {
-        unsigned char  ch[4];   /*      the character itself             */
-        unsigned char* ccl;  /*  OR  a pointer to characters in class */
+        uint8_t  ch[4];   /*      the character itself             */
+        uint8_t* ccl;  /*  OR  a pointer to characters in class */
         struct {
-            unsigned short n;
-            unsigned short m;
+            uint16_t n;
+            uint16_t m;
         } times;
     } u;
     int ch_size;
@@ -69,7 +69,7 @@ static int matchstar(regex_t p, regex_t* pattern,
 static int matchplus(regex_t p, regex_t* pattern,
                      const char* text, int rune_size, int* matchlength);
 static int matchone(regex_t p, const char* c, int rune_size);
-static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned short m,
+static int matchtimes(regex_t p, regex_t* pattern, uint16_t n, uint16_t m,
                       const char* text, int rune_size, int* matchlength);
 static int matchdigit(char c);
 static int matchalpha(char c);
@@ -79,7 +79,7 @@ static int matchrange(const char* c, int c_size, const char* str, int rune_size)
 static int matchdot(char c);
 static int ismetachar(char c);
 
-static int parsetimes(const char* pattern, unsigned short* n, unsigned short* m);
+static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m);
 
 
 /* Public functions: */
@@ -133,7 +133,7 @@ re_t re_compile(const char* pattern) {
         MAX_REGEXP_OBJECTS is the max number of symbols in the expression.
         MAX_CHAR_CLASS_LEN determines the size of buffer for chars in all char-classes in the expression. */
     static regex_t re_compiled[MAX_REGEXP_OBJECTS];
-    static unsigned char ccl_buf[MAX_CHAR_CLASS_LEN];
+    static uint8_t ccl_buf[MAX_CHAR_CLASS_LEN];
     int ccl_bufidx = 1;
 
     char c;     /* current char in pattern   */
@@ -233,7 +233,7 @@ re_t re_compile(const char* pattern) {
 
         case '{':
         {
-            unsigned short n, m;
+            uint16_t n, m;
             int len = parsetimes(&pattern[i + 1], &n, &m);
             if (!len)
                 return 0;
@@ -316,11 +316,11 @@ TsmResult tsm_regex_match(const char *pattern, const char *str) {
 
 
 /* Private functions: */
-static int parsetimes(const char* pattern, unsigned short* n, unsigned short* m) {
+static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
     const char* pattern_start = pattern;
     int n_is_valid = 0;
     int i_is_valid = 0;
-    unsigned short i = 0;
+    uint16_t i = 0;
     *n = 0;
     *m = 0;
     while (*pattern) {
@@ -364,15 +364,15 @@ static int parsetimes(const char* pattern, unsigned short* n, unsigned short* m)
 }
 
 static int matchdigit(char c) {
-    return isdigit((unsigned char)c);
+    return isdigit((uint8_t)c);
 }
 
 static int matchalpha(char c) {
-    return isalpha((unsigned char)c);
+    return isalpha((uint8_t)c);
 }
 
 static int matchwhitespace(char c) {
-    return isspace((unsigned char)c);
+    return isspace((uint8_t)c);
 }
 
 static int matchalphanum(char c) {
@@ -517,10 +517,9 @@ static int matchquestion(regex_t p, regex_t* pattern,
     return 0;
 }
 
-static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned short m,
-                      const char* text, int rune_size, int* matchlength)
-{
-    unsigned short i = 0;
+static int matchtimes(regex_t p, regex_t* pattern, uint16_t n, uint16_t m,
+                      const char* text, int rune_size, int* matchlength) {
+    uint16_t i = 0;
     int pre = *matchlength;
     /* Match the pattern n to m times */
     if (n == 0 && matchpattern(pattern, text, rune_size, matchlength))
@@ -537,8 +536,7 @@ static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned sh
         if (i >= n && matchpattern(pattern, text, rune_size, matchlength))
             return 1;
     }
-    //if (i == m && matchpattern(pattern, text, rune_size, matchlength))
-    //    return 1;
+
     *matchlength = pre;
     return 0;
 }
@@ -546,13 +544,16 @@ static int matchtimes(regex_t p, regex_t* pattern, unsigned short n, unsigned sh
 static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength) {
     int pre = *matchlength;
     do {
-        if ((pattern[0].type == UNUSED) || (pattern[0].type == BRANCH) || (pattern[1].type == QUESTIONMARK))
+        if ((pattern[0].type == UNUSED) ||
+            (pattern[0].type == BRANCH) ||
+            (pattern[1].type == QUESTIONMARK))
             return matchquestion(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == STAR)
             return matchstar(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == PLUS)
             return matchplus(pattern[0], &pattern[2], text, rune_size, matchlength);
-        else if ((pattern[0].type == END) && (pattern[1].type == UNUSED || pattern[1].type == BRANCH))
+        else if ((pattern[0].type == END) &&
+                 (pattern[1].type == UNUSED || pattern[1].type == BRANCH))
             return (text[0] == '\0');
         else if (pattern[1].type == TIMES)
             return matchtimes(pattern[0], &pattern[2], pattern[1].u.times.n, pattern[1].u.times.m,
