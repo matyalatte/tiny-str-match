@@ -112,9 +112,9 @@ INSTANTIATE_TEST_CASE_P(RegexTestInstantiation_UTF,
     RegexTest,
     ::testing::ValuesIn(regex_cases_utf));
 
-TEST_P(RegexTest, tsmRegexMatch) {
+TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();
-    int actual = tsmRegexMatch(test_case.pattern, test_case.str);
+    int actual = tsm_regex_match(test_case.pattern, test_case.str);
     EXPECT_EQ(test_case.expected, actual)
         << "\npattern: " << test_case.pattern << ", str: " << test_case.str << "\n";
 }

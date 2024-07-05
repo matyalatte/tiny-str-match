@@ -155,9 +155,9 @@ INSTANTIATE_TEST_CASE_P(WildcardTestInstantiation_Multicard,
     WildcardTest,
     ::testing::ValuesIn(wildcard_cases_multicard));
 
-TEST_P(WildcardTest, tsmWildcardMatch) {
+TEST_P(WildcardTest, tsm_wildcard_match) {
     const WildcardCase test_case = GetParam();
-    int actual = tsmWildcardMatch(test_case.pattern, test_case.str);
+    int actual = tsm_wildcard_match(test_case.pattern, test_case.str);
     EXPECT_EQ(test_case.expected, actual)
         << "\npattern: " << test_case.pattern << ", str: " << test_case.str << "\n";
 }

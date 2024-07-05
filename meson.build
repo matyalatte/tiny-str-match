@@ -1,4 +1,10 @@
-project('tiny-str-match', 'c', version: '0.1.0')
+project('tiny-str-match', 'c',
+    default_options: [
+        'warning_level=3',              # always max warnings
+        'c_std=c99',                    # strict C99
+        'cpp_std=c++11',                # strict C++11
+    ],
+    version: '0.1.0')
 
 # set source files
 tsm_sources = [
@@ -7,10 +13,16 @@ tsm_sources = [
     'src/re.c',
 ]
 
+tiny_str_match_lib = library('tiny_str_match',
+    tsm_sources,
+    install: true,
+    include_directories: include_directories('./include'),
+    gnu_symbol_visibility: 'hidden')
+
 # dependency for other projects
 tiny_str_match_dep = declare_dependency(
     include_directories: include_directories('./include'),
-    sources : tsm_sources)
+    link_with: tiny_str_match_lib)
 
 # Build unit tests
 if get_option('tests')
