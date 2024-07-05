@@ -24,6 +24,22 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Null,
     RegexTest,
     ::testing::ValuesIn(regex_cases_null));
 
+// Test with bad runes.
+const RegexCase regex_cases_bad[] = {
+    { "a\x81", "a", TSM_SYNTAX_ERROR },
+    { "a\xc0 ", "a", TSM_SYNTAX_ERROR },  // two-byte bad rune
+    { "a\xe0 ", "a", TSM_SYNTAX_ERROR },  // three-byte bad rune
+    { "a\xf0 ", "a", TSM_SYNTAX_ERROR },  // four-byte bad rune
+    { "a", "a\x81", TSM_FAIL },
+    { "a", "a\xc0 ", TSM_FAIL },  // two-byte bad rune
+    { "a", "a\xe0 ", TSM_FAIL },  // three-byte bad rune
+    { "a", "a\xf0 ", TSM_FAIL },  // four-byte bad rune
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Bad,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_bad));
+
 // Test with invalid patterns.
 const RegexCase regex_cases_syntax[] = {
     { "[", "", TSM_SYNTAX_ERROR },
