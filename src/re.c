@@ -512,20 +512,17 @@ static int matchtimes(regex_t p, regex_t* pattern, uint16_t n, uint16_t m,
     uint16_t i = 0;
     int pre = *matchlength;
     /* Match the pattern n to m times */
-    if (n == 0 && matchpattern(pattern, text, rune_size, matchlength))
-        return 1;
-    while (*text && matchone(p, text, rune_size) && i < m) {
+    do {
+        if (i >= n && matchpattern(pattern, text, rune_size, matchlength))
+            return 1;
+        if (!*text || !matchone(p, text, rune_size))
+            break;
         text += rune_size;
         *matchlength += rune_size;
         rune_size = tsm_rune_size(text);
-        if (!rune_size) {
-            *matchlength = pre;
-            return 0;
-        }
+        if (!rune_size) break;
         i++;
-        if (i >= n && matchpattern(pattern, text, rune_size, matchlength))
-            return 1;
-    }
+    } while (i <= m);
 
     *matchlength = pre;
     return 0;
