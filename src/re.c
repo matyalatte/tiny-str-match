@@ -321,19 +321,15 @@ static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
     int n_is_valid = 0;
     int i_is_valid = 0;
     uint16_t i = 0;
-    *n = 0;
-    *m = 0;
     while (*pattern) {
         if (matchdigit(*pattern)) {
             i_is_valid = 1;
             i = i * 10 + (int)(*pattern - '0');
         } else if (*pattern == ',') {
-            if (n_is_valid)
-                return 0;  // two commas found.
-            if (!i_is_valid)
-                return 0;  // {,* (n not found)
-            else
-                *n = i;  // {n,*
+            if (n_is_valid ||  // two commas found
+                !i_is_valid)   // {,* (n not found)
+                return 0;
+            *n = i;  // {n,*
             i = 0;
             i_is_valid = 0;
             n_is_valid = 1;
@@ -345,13 +341,10 @@ static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
                 *n = i;
                 *m = i;
             }
-            if (!i_is_valid) {
-                // {n,}
-                *m = MAX_USHORT;
-            } else {
-                // {n,m}
-                *m = i;
-            }
+            if (!i_is_valid)
+                *m = MAX_USHORT;  // {n,}
+            else
+                *m = i;  // {n,m}
             if (*m < *n)
                 return 0;  // {n,m} should meet n <= m
             return (int)(pattern - pattern_start);
