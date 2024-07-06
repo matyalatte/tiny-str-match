@@ -88,11 +88,13 @@ int re_match(const char* pattern, const char* text, int* matchlength) {
 }
 
 int re_matchp(re_t pattern, const char* text, int* matchlength) {
-    *matchlength = 0;
+    if (!pattern) return -1;
+
     int rune_size = tsm_rune_size(text);
     if (!rune_size) return -1;
 
-    if (pattern != 0) {
+    do {
+        *matchlength = 0;
         if (pattern[0].type == BEGIN) {
             if (matchpattern(&pattern[1], text, rune_size, matchlength))
                 return 0;
@@ -107,6 +109,7 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
 
                     return (int)(text - prepoint);
                 }
+                if (pattern[0].type == BEGIN) break;
                 //  Reset match length for the next starting point
                 *matchlength = 0;
                 if (*text == '\0') break;
@@ -116,15 +119,15 @@ int re_matchp(re_t pattern, const char* text, int* matchlength) {
             } while (1);
             text = prepoint;
         }
-    }
 
-    // move to the next branch
-    while (pattern->type != UNUSED) {
-        if (pattern->type == BRANCH) {
-            return re_matchp(pattern + 1, text, matchlength);
+        // move to the next branch
+        while (pattern->type != UNUSED && pattern->type != BRANCH) {
+            pattern++;
         }
+        if (pattern->type == UNUSED)
+            break;
         pattern++;
-    }
+    } while (1);
     return -1;
 }
 
