@@ -18,9 +18,14 @@
 extern "C" {
 #endif
 
+// Counts the binary size of an utf-8 character.
 extern int tsm_rune_size(const char *c);
-extern uint32_t tsm_rune_code(const char *c, int rune_size);
-extern int tsm_rune_cmp(const char *c1, const char *c2, int rune_size);
+
+// Checks if two utf-8 characters are the same or not.
+// -1 when c1 < c2
+//  0 when c1 == c2
+//  1 when c1 > c2
+extern int tsm_rune_cmp(const char *c1, int size1, const char *c2, int size2);
 
 #ifdef __cplusplus
 }

@@ -31,7 +31,7 @@ static TsmResult wildcard_match_base(const char* pattern, const char* str) {
         if (*pattern == '?') {
             if (!*str)
                 return TSM_FAIL;
-        } else if (!tsm_rune_cmp(pattern, str, p_rs)) {
+        } else if (tsm_rune_cmp(pattern, p_rs, str, s_rs)) {
             return TSM_FAIL;
         }
         pattern += p_rs;

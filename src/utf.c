@@ -30,21 +30,19 @@ int tsm_rune_size(const char *c) {
     return 0;  // bad rune
 }
 
-uint32_t tsm_rune_code(const char *c, int rune_size) {
-    uint32_t code = 0;
-    for (int i = rune_size - 1; i >= 0; i--) {
-        code += (uint32_t)((unsigned char)*c) << (8 * i);
-        c++;
-    }
-    return code;
-}
+#define num_cmp(i, j) 2 * ((i) > (j)) - 1
 
-int tsm_rune_cmp(const char *c1, const char *c2, int rune_size) {
-    for (int i = 0; i < rune_size; i++) {
+// Checks if two utf-8 characters are the same or not.
+// -1 when c1 < c2
+//  0 when c1 == c2
+//  1 when c1 > c2
+int tsm_rune_cmp(const char *c1, int size1, const char *c2, int size2) {
+    if (size1 != size2) return num_cmp(size1, size2);
+    for (int i = 0; i < size1; i++) {
         if (*c1 != *c2)
-            return 0;
+            return num_cmp((uint8_t)(*c1), (uint8_t)(*c2));
         c1++;
         c2++;
     }
-    return 1;
+    return 0;
 }

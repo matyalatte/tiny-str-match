@@ -386,13 +386,11 @@ static int matchrange(const char* c, int c_size, const char* str, int rune_size)
         || (str[rune_size] != '-')
         || (str[rune_size + 1] == '\0'))
         return 0;
-    uint32_t c_code = tsm_rune_code(c, c_size);
-    uint32_t str_code = tsm_rune_code(str, rune_size);
     const char* str2 = &str[rune_size + 1];
     int rune_size2 = tsm_rune_size(str2);
     if (!rune_size2) return 0;
-    uint32_t str_code2 = tsm_rune_code(str2, rune_size2);
-    return ((c_code >= str_code) && (c_code <= str_code2));
+    return (tsm_rune_cmp(c, c_size, str, rune_size) >= 0 &&
+            tsm_rune_cmp(c, c_size, str2, rune_size2) <= 0);
 }
 
 static int matchdot(char c) {
@@ -416,7 +414,7 @@ static int matchmetachar(const char* c, int c_size, const char* str, int rune_si
         case 'W': return !matchalphanum(*c);
         case 's': return  matchwhitespace(*c);
         case 'S': return !matchwhitespace(*c);
-        default:  return (c_size == rune_size) && tsm_rune_cmp(c, str, c_size);
+        default:  return !tsm_rune_cmp(c, c_size, str, rune_size);
     }
 }
 
@@ -433,9 +431,9 @@ static int matchcharclass(const char* c, int c_size, const char* str) {
             if (!rune_size) return 0;
             if (matchmetachar(c, c_size, str, rune_size))
                 return 1;
-            else if ((c_size == rune_size) && tsm_rune_cmp(c, str, c_size) && !ismetachar(*c))
+            else if (!tsm_rune_cmp(c, c_size, str, rune_size) && !ismetachar(*c))
                 return 1;
-        } else if ((c_size == rune_size) && tsm_rune_cmp(c, str, c_size)) {
+        } else if (!tsm_rune_cmp(c, c_size, str, rune_size)) {
             if (*c == '-')
                 return ((str[-1] == '\0') || (str[1] == '\0'));
             else
@@ -461,8 +459,7 @@ static int matchone(regex_t p, const char* c, int c_size) {
         case WHITESPACE:     return  matchwhitespace(*c);
         case NOT_WHITESPACE: return !matchwhitespace(*c);
         case BEGIN:          return 0;
-        default:             return  (c_size == p.ch_size) &&
-                                     tsm_rune_cmp(c, (const char*)p.u.ch, c_size);
+        default:             return !tsm_rune_cmp(c, c_size, (const char*)p.u.ch, p.ch_size);
     }
 }
 
