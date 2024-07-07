@@ -71,13 +71,13 @@ static int matchplus(regex_t p, regex_t* pattern,
 static int matchone(regex_t p, const char* c, int rune_size);
 static int matchtimes(regex_t p, regex_t* pattern, uint16_t n, uint16_t m,
                       const char* text, int rune_size, int* matchlength);
+static int matchend(regex_t p, const char* text);
 static int matchdigit(char c);
 static int matchalpha(char c);
 static int matchwhitespace(char c);
 static int matchmetachar(const char* c, int c_size, const char* str, int rune_size);
 static int matchrange(const char* c, int c_size, const char* str, int rune_size);
 static int matchdot(char c);
-static int ismetachar(char c);
 
 static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m);
 
@@ -398,10 +398,6 @@ static int matchdot(char c) {
 #endif
 }
 
-static int ismetachar(char c) {
-    return ((c == 's') || (c == 'S') || (c == 'w') || (c == 'W') || (c == 'd') || (c == 'D'));
-}
-
 static int matchmetachar(const char* c, int c_size, const char* str, int rune_size) {
     switch (str[0]) {
         case 'd': return  matchdigit(*c);
@@ -426,8 +422,6 @@ static int matchcharclass(const char* c, int c_size, const char* str) {
             rune_size = tsm_rune_size(str);
             if (!rune_size) return 0;
             if (matchmetachar(c, c_size, str, rune_size))
-                return 1;
-            else if (!tsm_rune_cmp(c, c_size, str, rune_size) && !ismetachar(*c))
                 return 1;
         } else if (!tsm_rune_cmp(c, c_size, str, rune_size)) {
             if (*c == '-')
@@ -531,6 +525,12 @@ static int matchtimes(regex_t p, regex_t* pattern, uint16_t n, uint16_t m,
     return 0;
 }
 
+static int matchend(regex_t p, const char* text) {
+    if (p.type == UNUSED || p.type == BRANCH)
+        return (text[0] == '\0');
+    return 0;
+}
+
 static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* matchlength) {
     int pre = *matchlength;
     do {
@@ -538,13 +538,14 @@ static int matchpattern(regex_t* pattern, const char* text, int rune_size, int* 
             (pattern[0].type == BRANCH) ||
             (pattern[1].type == QUESTIONMARK))
             return matchquestion(pattern[0], &pattern[2], text, rune_size, matchlength);
+        else if (pattern[0].type == TIMES)
+            break;
         else if (pattern[1].type == STAR)
             return matchstar(pattern[0], &pattern[2], text, rune_size, matchlength);
         else if (pattern[1].type == PLUS)
             return matchplus(pattern[0], &pattern[2], text, rune_size, matchlength);
-        else if ((pattern[0].type == END) &&
-                 (pattern[1].type == UNUSED || pattern[1].type == BRANCH))
-            return (text[0] == '\0');
+        else if (pattern[0].type == END)
+            return matchend(pattern[1], text);
         else if (pattern[1].type == TIMES)
             return matchtimes(pattern[0], &pattern[2], pattern[1].u.times.n, pattern[1].u.times.m,
                               text, rune_size, matchlength);

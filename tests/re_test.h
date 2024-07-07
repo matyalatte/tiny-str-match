@@ -44,6 +44,7 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Bad,
 const RegexCase regex_cases_syntax[] = {
     { "[", "", TSM_SYNTAX_ERROR },
     { "{", "", TSM_SYNTAX_ERROR },
+    { "{}", "", TSM_SYNTAX_ERROR },
     { "a{,3}", "", TSM_SYNTAX_ERROR },
     { "a{1,0}", "", TSM_SYNTAX_ERROR },
     { "a{1,a}", "", TSM_SYNTAX_ERROR },
@@ -195,7 +196,7 @@ const RegexCase regex_cases_python[] = {
     { "^abc$", "aabc", TSM_FAIL },
     { "abc$", "aabc", TSM_OK },
     { "^", "abc", TSM_OK },
-    // { "$", "abc", TSM_OK },  // fail
+    { "$", "abc", TSM_OK },
     { "a.c", "abc", TSM_OK },
     { "a.c", "axc", TSM_OK },
     { "a.*c", "axyzc", TSM_OK },
@@ -297,6 +298,8 @@ const RegexCase regex_cases_times[] = {
     { "[A-Z]{4}", "AbCD", TSM_FAIL },
     { "^[A-Z]{4}$", "ABC", TSM_FAIL },
     { "^[A-Z]{4}$", "ABCDE", TSM_FAIL },
+    { "{4}", "", TSM_FAIL },
+    { "{4}", "aaaa", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Times,
@@ -325,17 +328,53 @@ const RegexCase regex_cases_branch[] = {
     { "ab*|c", "bbbb", TSM_FAIL },
     { "ab*|c", "c", TSM_OK },
     { "^c$|^go$|^rust$", "c", TSM_OK },
+    { "^c$|^go$|^rust$", "ac", TSM_FAIL },
     { "^c$|^go$|^rust$", "cpp", TSM_FAIL },
     { "^c$|^go$|^rust$", "go", TSM_OK },
     { "^c$|^go$|^rust$", "togo", TSM_FAIL },
     { "^c$|^go$|^rust$", "goto", TSM_FAIL },
     { "^c$|^go$|^rust$", "rust", TSM_OK },
+    { "^c$|^go$|^rust$", "crust", TSM_FAIL },
+    { "^c$|^go$|^rust$", "rustc", TSM_FAIL },
     { "[a-z]*\\.png|[a-z]*\\.jpg|[a-z]*\\.bmp", "alpha.jpg", TSM_OK },
+    { "^[\\d]{1,4}$|a+", "0123", TSM_OK },
+    { "^[\\d]{1,4}$|a+", "01234", TSM_FAIL },
+    { "^[\\d]{1,4}$|a+", "aaaaa", TSM_OK },
+    { "^[\\d]{1,4}$|a+", "AAAAA", TSM_FAIL },
+    { "^[\\d]{1,4}$|a+", "", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Branch,
     RegexTest,
     ::testing::ValuesIn(regex_cases_branch));
+
+// Test with ^$ operators.
+const RegexCase regex_cases_startend[] = {
+    { "^", "", TSM_OK },
+    { "^", "a", TSM_OK },
+    { "^a", "a", TSM_OK },
+    { "^a", "b", TSM_FAIL },
+    { "a^", "", TSM_FAIL },
+    { "a^", "a", TSM_FAIL },
+    { "a^", "aa", TSM_FAIL },
+    { "$", "", TSM_OK },
+    { "$", "a", TSM_OK },
+    { "a$", "a", TSM_OK },
+    { "a$", "b", TSM_FAIL },
+    { "$a", "", TSM_FAIL },
+    { "$a", "a", TSM_FAIL },
+    { "$a", "aa", TSM_FAIL },
+    { "$^", "", TSM_FAIL },
+    { "^$", "", TSM_OK },
+    { "^ab$", "", TSM_FAIL },
+    { "^ab$", "ab", TSM_OK },
+    { "^ab$", "abb", TSM_FAIL },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Startend,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_startend));
+
 
 TEST_P(RegexTest, tsm_regex_match) {
     const RegexCase test_case = GetParam();
