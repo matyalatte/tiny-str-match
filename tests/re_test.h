@@ -43,7 +43,11 @@ INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Bad,
 // Test with invalid patterns.
 const RegexCase regex_cases_syntax[] = {
     { "[", "", TSM_SYNTAX_ERROR },
+    { "[a", "", TSM_SYNTAX_ERROR },
+    { "[^", "", TSM_SYNTAX_ERROR },
+    { "[\\", "", TSM_SYNTAX_ERROR },
     { "{", "", TSM_SYNTAX_ERROR },
+    { "{1,2", "", TSM_SYNTAX_ERROR },
     { "{}", "", TSM_SYNTAX_ERROR },
     { "a{,3}", "", TSM_SYNTAX_ERROR },
     { "a{1,0}", "", TSM_SYNTAX_ERROR },
@@ -374,6 +378,21 @@ const RegexCase regex_cases_startend[] = {
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Startend,
     RegexTest,
     ::testing::ValuesIn(regex_cases_startend));
+
+// Test with long pattern errors.
+const RegexCase regex_cases_long_error[] = {
+    { "abcdefghijabcdefghijabcdefghi", "abcdefghijabcdefghijabcdefghi", TSM_OK },
+    { "abcdefghijabcdefghijabcdefghij", "", TSM_SYNTAX_ERROR },
+    { "[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKL]", "a", TSM_OK },
+    { "[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKL\\]", "", TSM_SYNTAX_ERROR },
+    { "[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM]", "", TSM_SYNTAX_ERROR },
+    { "[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN]", "", TSM_SYNTAX_ERROR },
+};
+
+INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_Longerror,
+    RegexTest,
+    ::testing::ValuesIn(regex_cases_long_error));
+
 
 
 TEST_P(RegexTest, tsm_regex_match) {

@@ -83,9 +83,11 @@ static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m);
 
 
 /* Public functions: */
+#ifdef TSM_USE_ALL_TINY_REGEX
 int re_match(const char* pattern, const char* text, int* matchlength) {
     return re_matchp(re_compile(pattern), text, matchlength);
 }
+#endif
 
 int re_matchp(re_t pattern, const char* text, int* matchlength) {
     if (!pattern) return -1;
@@ -144,7 +146,9 @@ re_t re_compile(const char* pattern) {
     int i = 0;  /* index into pattern        */
     int j = 0;  /* index into re_compiled    */
 
-    while (pattern[i] != '\0' && (j + 1 < MAX_REGEXP_OBJECTS)) {
+    while (pattern[i] != '\0') {
+        if (j + 1 >= MAX_REGEXP_OBJECTS)
+            return 0;
         c = pattern[i];
         c_size = tsm_rune_size(&pattern[i]);
         if (!c_size) return 0;  // failed to parse UTF-8 character.
@@ -270,6 +274,7 @@ re_t re_compile(const char* pattern) {
     return (re_t) re_compiled;
 }
 
+#ifdef TSM_USE_ALL_TINY_REGEX
 void re_print(regex_t* pattern) {
     const char* types[] = {
         "UNUSED", "DOT", "BEGIN", "END", "QUESTIONMARK", "STAR", "PLUS",
@@ -303,6 +308,7 @@ void re_print(regex_t* pattern) {
         printf("\n");
     }
 }
+#endif
 
 TsmResult tsm_regex_match(const char *pattern, const char *str) {
     if (pattern == NULL || str == NULL)

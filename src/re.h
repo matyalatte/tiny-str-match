@@ -54,8 +54,10 @@ re_t re_compile(const char* pattern);
 int re_matchp(re_t pattern, const char* text, int* matchlength);
 
 
+#ifdef TSM_USE_ALL_TINY_REGEX
 /* Find matches of the txt pattern inside text (will compile automatically first). */
 int re_match(const char* pattern, const char* text, int* matchlength);
+#endif
 
 
 #ifdef __cplusplus
