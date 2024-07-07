@@ -32,7 +32,7 @@ int tsm_rune_size(const char *c) {
 
 #define num_cmp(i, j) 2 * ((i) > (j)) - 1
 
-// Checks if two utf-8 characters are the same or not.
+// Compares two utf-8 characters.
 // -1 when c1 < c2
 //  0 when c1 == c2
 //  1 when c1 > c2

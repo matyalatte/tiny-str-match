@@ -21,7 +21,7 @@ extern "C" {
 // Counts the binary size of an utf-8 character.
 extern int tsm_rune_size(const char *c);
 
-// Checks if two utf-8 characters are the same or not.
+// Compares two utf-8 characters.
 // -1 when c1 < c2
 //  0 when c1 == c2
 //  1 when c1 > c2

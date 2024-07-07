@@ -181,11 +181,11 @@ re_t re_compile(const char* pattern) {
                     /* Escaped character, e.g. '.' or '$' */
                     default:
                     {
-                    c_size = tsm_rune_size(&pattern[i]);
-                    if (!c_size) return 0;
-                    re_compiled[j].type = CHAR;
-                    memcpy(re_compiled[j].u.ch, &pattern[i], c_size);
-                    re_compiled[j].ch_size = c_size;
+                        c_size = tsm_rune_size(&pattern[i]);
+                        if (!c_size) return 0;
+                        re_compiled[j].type = CHAR;
+                        memcpy(re_compiled[j].u.ch, &pattern[i], c_size);
+                        re_compiled[j].ch_size = c_size;
                     } break;
                 }
             } else {
@@ -348,12 +348,8 @@ static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
                     return 0;  // {}
                 // {n}
                 *n = i;
-                *m = i;
             }
-            if (!i_is_valid)
-                *m = MAX_USHORT;  // {n,}
-            else
-                *m = i;  // {n,m}
+            *m = (i_is_valid) ? i : MAX_USHORT;  // {n,m} or {n,}
             if (*m < *n)
                 return 0;  // {n,m} should meet n <= m
             return (int)(pattern - pattern_start);
