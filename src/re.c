@@ -357,7 +357,7 @@ static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
             if (*m < *n)
                 return 0;  // {n,m} should meet n <= m
             return (int)(pattern - pattern_start);
-        } else if (*pattern != ' ') {
+        } else {
             return 0;  // non-numeric character.
         }
         pattern++;

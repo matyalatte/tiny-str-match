@@ -52,6 +52,9 @@ const RegexCase regex_cases_syntax[] = {
     { "a{,3}", "", TSM_SYNTAX_ERROR },
     { "a{1,0}", "", TSM_SYNTAX_ERROR },
     { "a{1,a}", "", TSM_SYNTAX_ERROR },
+    { "a{1, 2}", "", TSM_SYNTAX_ERROR },
+    { "a{ 1,2}", "", TSM_SYNTAX_ERROR },
+    { "a{1,2 }", "", TSM_SYNTAX_ERROR },
     { u8"a{\U0001F600,a}", "", TSM_SYNTAX_ERROR },
 };
 
@@ -153,6 +156,8 @@ const RegexCase regex_cases_utf[] = {
     { u8"[\\\U0001F600]+", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
     { u8"[\\\U0001F600]+", "a", TSM_FAIL },
     { u8"\U0001F600{3}", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
+    { u8"^[\U0001F600]{3}$", u8"\U0001F600\U0001F600\U0001F600", TSM_OK },
+    { u8"^[\U0001F600]{3}$", u8"\U0001F600\U0001F600", TSM_FAIL },
 };
 
 INSTANTIATE_TEST_SUITE_P(RegexTestInstantiation_UTF,
