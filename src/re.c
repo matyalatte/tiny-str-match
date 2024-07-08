@@ -92,35 +92,21 @@ int re_match(const char* pattern, const char* text, int* matchlength) {
 int re_matchp(re_t pattern, const char* text, int* matchlength) {
     if (!pattern) return -1;
 
-    int rune_size = tsm_rune_size(text);
-    if (!rune_size) return -1;
+    const char* prepoint = text;
 
     do {
-        *matchlength = 0;
-        if (pattern[0].type == BEGIN) {
-            if (matchpattern(&pattern[1], text, rune_size, matchlength))
-                return 0;
-        } else {
-            const char* prepoint = text;
-
-            do {
-                if (matchpattern(pattern, text, rune_size, matchlength)) {
-                    // Maybe we don't need this
-                    // if (text[0] == '\0')
-                    //     return -1;
-
-                    return (int)(text - prepoint);
-                }
-                if (pattern[0].type == BEGIN) break;
-                //  Reset match length for the next starting point
-                *matchlength = 0;
-                if (*text == '\0') break;
-                text += rune_size;
-                rune_size = tsm_rune_size(text);
-                if (!rune_size) return -1;
-            } while (1);
-            text = prepoint;
-        }
+        text = prepoint;
+        do {
+            *matchlength = 0;
+            int rune_size = tsm_rune_size(text);
+            if (!rune_size) return -1;
+            int has_start_anchor = pattern[0].type == BEGIN;
+            if (matchpattern(pattern + has_start_anchor, text, rune_size, matchlength)) {
+                return (int)(text - prepoint);
+            }
+            if (has_start_anchor || !*text) break;
+            text += rune_size;
+        } while (1);
 
         // move to the next branch
         while (pattern->type != UNUSED && pattern->type != BRANCH) {
@@ -326,33 +312,28 @@ TsmResult tsm_regex_match(const char *pattern, const char *str) {
 
 /* Private functions: */
 static int parsetimes(const char* pattern, uint16_t* n, uint16_t* m) {
-    const char* pattern_start = pattern;
-    int n_is_valid = 0;
-    int i_is_valid = 0;
+    const char* start = pattern;
     uint16_t i = 0;
+    int n_valid = 0, i_valid = 0;
+
     while (*pattern) {
         if (matchdigit(*pattern)) {
-            i_is_valid = 1;
-            i = i * 10 + (int)(*pattern - '0');
+            i_valid = 1;
+            i = i * 10 + (uint16_t)(*pattern - '0');
         } else if (*pattern == ',') {
-            if (n_is_valid ||  // two commas found
-                !i_is_valid)   // {,* (n not found)
-                return 0;
+            if (n_valid || !i_valid)
+                return 0;  // two commas found or n not found.
             *n = i;  // {n,*
             i = 0;
-            i_is_valid = 0;
-            n_is_valid = 1;
+            n_valid = 1;
+            i_valid = 0;
         } else if (*pattern == '}') {
-            if (!n_is_valid) {
-                if (!i_is_valid)
-                    return 0;  // {}
-                // {n}
-                *n = i;
-            }
-            *m = (i_is_valid) ? i : MAX_USHORT;  // {n,m} or {n,}
+            if (!n_valid)
+                *n = i_valid ? i : 0;  // {n} or {}
+            *m = (i_valid) ? i : MAX_USHORT;  // {n,m} or {n,}
             if (*m < *n)
                 return 0;  // {n,m} should meet n <= m
-            return (int)(pattern - pattern_start);
+            return (int)(pattern - start);
         } else {
             return 0;  // non-numeric character.
         }
@@ -428,8 +409,7 @@ static int matchcharclass(const char* c, int c_size, const char* str) {
         } else if (!tsm_rune_cmp(c, c_size, str, rune_size)) {
             if (*c == '-')
                 return ((str[-1] == '\0') || (str[1] == '\0'));
-            else
-                return 1;
+            return 1;
         }
         if (*str == '\0')
             break;
@@ -487,9 +467,8 @@ static int matchplus(regex_t p, regex_t* pattern,
 
 static int matchquestion(regex_t p, regex_t* pattern,
                          const char* text, int rune_size, int* matchlength) {
-    if (p.type == UNUSED || p.type == BRANCH)
-        return 1;
-    if (matchpattern(pattern, text, rune_size, matchlength))
+    if (p.type == UNUSED || p.type == BRANCH ||
+        matchpattern(pattern, text, rune_size, matchlength))
         return 1;
     if (!*text)
         return 0;
