@@ -7,13 +7,18 @@
 extern "C" {
 #endif
 
+// Export APIs when shared build
 #ifndef _TSM_EXTERN
+#ifdef _TSM_STATIC
+#define _TSM_EXTERN extern
+#else  // _TSM_STATIC
 #ifdef _WIN32
 #define _TSM_EXTERN __declspec(dllexport) extern
-#else
+#else  // _WIN32
 #define _TSM_EXTERN __attribute__((visibility("default"))) extern
-#endif
-#endif
+#endif  // _WIN32
+#endif  // _TSM_STATIC
+#endif  // _TSM_EXTERN
 
 #define _TSM_ENUM(s) typedef int s; enum
 
