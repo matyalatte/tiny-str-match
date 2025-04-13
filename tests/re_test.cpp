@@ -211,8 +211,8 @@ const RegexCase regex_cases_python[] = {
     { "a.*c", "axyzc", TSM_OK },
     { "a.*c", "axyzd", TSM_FAIL },
     { "a[bc]d", "abc", TSM_FAIL },
-    { "a[bc]d", "abd", TSM_OK },
-    { "a[b-d]e", "abd", TSM_FAIL },
+    { "a[bc]f", "abf", TSM_OK },
+    { "a[b-e]f", "abe", TSM_FAIL },
     { "a[b-d]e", "ace", TSM_OK },
     { "a[b-d]", "aac", TSM_OK },
     { "a[-d]", "a-", TSM_OK },
@@ -227,7 +227,7 @@ const RegexCase regex_cases_python[] = {
     // { "a[]]b", "a]b", TSM_OK },  // fail.
     { "a[\\]]b", "a]b", TSM_OK },
     { "a[^bc]d", "aed", TSM_OK },
-    { "a[^bc]d", "abd", TSM_FAIL },
+    { "a[^bc]e", "abe", TSM_FAIL },
     // { "a[^-b]d", "adc", TSM_OK },  // fail.
     { "a[^-b]d", "a-c", TSM_FAIL },
     // { "a[^]b]c", "a]c", TSM_FAIL }, // I don't think this pattern should be supported.
