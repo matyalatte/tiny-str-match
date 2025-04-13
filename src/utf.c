@@ -6,7 +6,7 @@ int tsm_rune_size(const char *c) {
     const uint8_t first = *c;
     if (first <= ASCII_MAX)
         return 1;  // ascii
-    if (first <= MULTIBYTE_SEQ_MAX)
+    if (first < TWO_BYTE_MIN)
         return 0;  // bad rune
     if (first <= TWO_BYTE_MAX) {
         if (is_multibyte_seq(*(c + 1)))
