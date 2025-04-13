@@ -9,8 +9,14 @@ if test_os == 'windows'
     endif
 endif
 
-test_exe = executable('uint_test',
+test_sources = [
     'main.cpp',
+    're_test.cpp',
+    'wildcard_test.cpp',
+]
+
+test_exe = executable('uint_test',
+    test_sources,
     cpp_args: test_cpp_args,
     dependencies : [tiny_str_match_dep, gtest_dep, gmock_dep],
     install : false)

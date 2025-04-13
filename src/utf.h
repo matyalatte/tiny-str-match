@@ -5,10 +5,11 @@
 
 #define ASCII_MAX 0x7F  // ascii 0x00 ~ 0x7F
 #define MULTIBYTE_SEQ_MAX 0xBF  // sequences for multibyte characters 0x80 ~ 0xBF
-#define TWO_BYTE_MAX 0xDF  // two-byte characters 0xC0 ~ 0xDF
+#define TWO_BYTE_MIN 0xC2  // two-byte characters 0xC2 ~ 0xDF
+#define TWO_BYTE_MAX 0xDF
 #define THREE_BYTE_MAX 0xEF  // three-byte characters 0xE0 ~ 0xEF
-#define FOUR_BYTE_MAX 0xF7  // four-byte characters 0xF0 ~ 0xF7
-// unused codes 0xF8 ~ 0xFF
+#define FOUR_BYTE_MAX 0xF4  // four-byte characters 0xF0 ~ 0xF4
+// unused codes 0xF5 ~ 0xFF
 // #define FIVE_BYTE_MAX 0xFB
 // #define SIX_BYTE_MAX 0xFD
 

@@ -136,6 +136,11 @@ const WildcardCase wildcard_cases_utf[] = {
     { u8"\u00c4?\U0001F600", u8"\u00c4\U0001F600", TSM_FAIL },
     { u8"\u00c4?\U0001F600", u8"\u00c4\u3042\U0001F600", TSM_OK },
     { u8"\U0001F600?\U0001F602", u8"\U0001F600\U0001F601\U0001F602", TSM_OK },
+    // Invalid utf character
+    { "\xC1\x80", "\xC1\x80", TSM_FAIL },
+    { "\xC2\x80", "\xC2\x80", TSM_OK },
+    { "\xF5\x80\x80\x80", "\xF5\x80\x80\x80", TSM_FAIL },
+    { "\xF4\x80\x80\x80", "\xF4\x80\x80\x80", TSM_OK },
 };
 
 INSTANTIATE_TEST_SUITE_P(WildcardTestInstantiation_UTF,
